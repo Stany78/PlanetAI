@@ -21,27 +21,17 @@ except Exception:
 # ---------------------------------------------------------
 # Utility
 # ---------------------------------------------------------
-def fmt_euro(value: float | None) -> str:
-    if value is None:
-        return "-"
-    try:
-        return f"{value:,.0f} €".replace(",", ".")
-    except Exception:
-        return f"{value} €"
-
-
 def build_word_report(
     *,
     comune_input: str,
     indirizzo_input: str,
-    superficie: float,
     lat: float,
     lon: float,
     zona_omi,
 ) -> io.BytesIO:
     """
-    Crea un report Word basato solo sui dati OMI.
-    `zona_omi` è l'oggetto restituito da get_quotazione_omi_da_coordinate.
+    Crea un report Word basato solo sui dati OMI (€/m²),
+    SENZA superficie e senza valore totale.
     """
     document = Document()
 
@@ -59,10 +49,6 @@ def build_word_report(
     p = document.add_paragraph()
     p.add_run("Indirizzo inserito: ").bold = True
     p.add_run(indirizzo_input)
-
-    p = document.add_paragraph()
-    p.add_run("Superficie commerciale: ").bold = True
-    p.add_run(f"{superficie:.0f} m²")
 
     p = document.add_paragraph()
     p.add_run("Coordinate (lat, lon): ").bold = True
@@ -102,31 +88,12 @@ def build_word_report(
     row[2].text = f"{zona_omi.val_med_mq:,.0f}".replace(",", ".")
     row[3].text = f"{zona_omi.val_max_mq:,.0f}".replace(",", ".")
 
-    # 4. Stima valore totale
-    document.add_heading("4. Stima di massima valore complessivo", level=2)
+    # Nota finale
+    document.add_paragraph(
+        "Il presente report riporta esclusivamente le quotazioni OMI espresse in €/m², "
+        "senza considerare caratteristiche specifiche dell'immobile (stato, piano, vista, ecc.)."
+    )
 
-    val_tot_min = zona_omi.val_min_mq * superficie
-    val_tot_med = zona_omi.val_med_mq * superficie
-    val_tot_max = zona_omi.val_max_mq * superficie
-
-    table2 = document.add_table(rows=4, cols=2)
-    r0 = table2.rows[0].cells
-    r0[0].text = "Superficie"
-    r0[1].text = f"{superficie:.0f} m²"
-
-    r1 = table2.rows[1].cells
-    r1[0].text = "Valore minimo"
-    r1[1].text = fmt_euro(val_tot_min)
-
-    r2 = table2.rows[2].cells
-    r2[0].text = "Valore mediano"
-    r2[1].text = fmt_euro(val_tot_med)
-
-    r3 = table2.rows[3].cells
-    r3[0].text = "Valore massimo"
-    r3[1].text = fmt_euro(val_tot_max)
-
-    # Salva in buffer
     buffer = io.BytesIO()
     document.save(buffer)
     buffer.seek(0)
@@ -157,12 +124,13 @@ st.title("🏙️ PlanetAI – Valutazione OMI")
 
 st.write(
     """
-Inserisci **Comune**, **Indirizzo** (via, civico) e **superficie**.
+Inserisci **Comune** e **Indirizzo** (via, civico).
+
 L'app:
 1. geocoda l'indirizzo,
 2. trova la **zona OMI**,
 3. mostra i valori OMI **min / med / max €/m²**,
-4. stima il **valore complessivo** e ti permette di scaricare un **report Word**.
+4. permette di scaricare un **report Word** solo con quotazioni €/m².
 """
 )
 
@@ -176,14 +144,6 @@ with st.form("omi_form"):
             value="Via Borgovico 150",
             placeholder="Es: Via Borgovico 150",
         )
-
-    superficie = st.number_input(
-        "Superficie commerciale (m²)",
-        min_value=10.0,
-        max_value=1000.0,
-        value=100.0,
-        step=5.0,
-    )
 
     submit = st.form_submit_button("Calcola valutazione OMI 🧮")
 
@@ -235,14 +195,14 @@ col_min.metric("Minimo", f"{zona_omi.val_min_mq:,.0f} €/m²".replace(",", ".")
 col_med.metric("Mediano", f"{zona_omi.val_med_mq:,.0f} €/m²".replace(",", "."))
 col_max.metric("Massimo", f"{zona_omi.val_max_mq:,.0f} €/m²".replace(",", "."))
 
-# Grafico valori €/m²
+# 🔁 Istogramma invertito: Massimo → Mediano → Minimo
 df_valori = pd.DataFrame(
     {
-        "Tipologia": ["Minimo", "Mediano", "Massimo"],
+        "Tipologia": ["Massimo", "Mediano", "Minimo"],
         "Valore €/m²": [
-            zona_omi.val_min_mq,
-            zona_omi.val_med_mq,
             zona_omi.val_max_mq,
+            zona_omi.val_med_mq,
+            zona_omi.val_min_mq,
         ],
     }
 )
@@ -251,25 +211,9 @@ st.bar_chart(
     height=260,
 )
 
+st.caption("Fonte: dati OMI caricati dai file CSV e KML (Agenzia delle Entrate).")
+
 st.markdown("---")
-
-# ---------------------------------------------------------
-# Stima valore totale
-# ---------------------------------------------------------
-st.subheader("🏠 Stima di massima del valore complessivo")
-
-val_tot_min = zona_omi.val_min_mq * superficie
-val_tot_med = zona_omi.val_med_mq * superficie
-val_tot_max = zona_omi.val_max_mq * superficie
-
-c1, c2, c3 = st.columns(3)
-c1.metric("Valore minimo", fmt_euro(val_tot_min))
-c2.metric("Valore mediano", fmt_euro(val_tot_med))
-c3.metric("Valore massimo", fmt_euro(val_tot_max))
-
-st.caption(
-    "⚠️ Stima puramente indicativa basata sui valori OMI di compravendita e sulla superficie inserita."
-)
 
 # ---------------------------------------------------------
 # Download report Word
@@ -278,7 +222,6 @@ if HAVE_DOCX:
     report_buffer = build_word_report(
         comune_input=comune,
         indirizzo_input=indirizzo,
-        superficie=superficie,
         lat=lat,
         lon=lon,
         zona_omi=zona_omi,
@@ -291,7 +234,7 @@ if HAVE_DOCX:
     )
 
     st.download_button(
-        label="📄 Scarica report Word",
+        label="📄 Scarica report Word (quotazioni €/m²)",
         data=report_buffer,
         file_name=file_name,
         mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
@@ -300,5 +243,3 @@ else:
     st.info(
         "Per abilitare il download del report Word, aggiungi `python-docx` al file `requirements.txt`."
     )
-
-st.caption("Fonte: dati OMI caricati dai file CSV e KML (Agenzia delle Entrate).")
