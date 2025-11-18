@@ -17,56 +17,140 @@ except:
     HAVE_DOCX = False
 
 
-def build_word_report(comune_input, indirizzo_input, lat, lon, zona):
-    """Crea il report Word premium basato SOLO su dati OMI."""
-    doc = Document()
+def build_word_report(
+    *,
+    comune_input: str,
+    indirizzo_input: str,
+    lat: float,
+    lon: float,
+    zona_omi,
+) -> io.BytesIO:
+    """
+    Crea un report Word basato solo sui dati OMI (€/m²),
+    con grafica migliorata e titolo Planet AI.
+    """
+    document = Document()
 
-    doc.add_heading("Report di Valutazione OMI", level=1)
-    doc.add_paragraph(f"Generato il: {datetime.now().strftime('%d/%m/%Y %H:%M')}")
+    # ------------------------------
+    #  TITOLO PRINCIPALE
+    # ------------------------------
+    title = document.add_heading("", level=0)
+    run_title = title.add_run("PLANET AI – Report OMI")
+    run_title.bold = True
+    run_title.font.size = Pt(22)
 
-    doc.add_heading("1. Dati di Input", level=2)
-    doc.add_paragraph(f"Comune inserito: {comune_input}")
-    doc.add_paragraph(f"Indirizzo inserito: {indirizzo_input}")
-    doc.add_paragraph(f"Coordinate geografiche: {lat:.6f}, {lon:.6f}")
+    document.add_paragraph(
+        f"Data generazione report: {datetime.now().strftime('%d/%m/%Y %H:%M')}"
+    )
 
-    doc.add_heading("2. Zona OMI trovata", level=2)
-    doc.add_paragraph(f"Comune (OMI): {zona.comune}")
-    doc.add_paragraph(f"Provincia: {zona.provincia}")
-    doc.add_paragraph(f"Codice zona: {zona.zona_codice}")
-    doc.add_paragraph(f"Descrizione zona: {zona.zona_descrizione}")
+    document.add_paragraph(
+        "Il presente report riporta una stima basata esclusivamente sulle "
+        "quotazioni OMI (€/m²) dell'Agenzia delle Entrate."
+    )
 
-    doc.add_heading("3. Quotazioni OMI €/m²", level=2)
-    table = doc.add_table(rows=2, cols=4)
+    # ------------------------------
+    # 1. DATI DI INPUT
+    # ------------------------------
+    document.add_heading("1. Dati di input", level=1)
+
+    p = document.add_paragraph()
+    p.add_run("Comune inserito: ").bold = True
+    p.add_run(comune_input)
+
+    p = document.add_paragraph()
+    p.add_run("Indirizzo inserito: ").bold = True
+    p.add_run(indirizzo_input)
+
+    p = document.add_paragraph()
+    p.add_run("Coordinate (lat, lon): ").bold = True
+    p.add_run(f"{lat:.6f}, {lon:.6f}")
+
+    # ------------------------------
+    # 2. ZONA OMI
+    # ------------------------------
+    document.add_heading("2. Zona OMI di riferimento", level=1)
+
+    p = document.add_paragraph()
+    p.add_run("Comune (OMI): ").bold = True
+    p.add_run(str(zona_omi.comune))
+
+    p = document.add_paragraph()
+    p.add_run("Provincia: ").bold = True
+    p.add_run(str(zona_omi.provincia))
+
+    p = document.add_paragraph()
+    p.add_run("Zona OMI: ").bold = True
+    p.add_run(str(zona_omi.zona_codice))
+
+    p = document.add_paragraph()
+    p.add_run("Descrizione zona: ").bold = True
+    p.add_run(str(zona_omi.zona_descrizione))
+
+    # ------------------------------
+    # 3. QUOTAZIONI €/m²
+    # ------------------------------
+    document.add_heading("3. Quotazioni OMI €/m² (compravendita)", level=1)
+
+    table = document.add_table(rows=2, cols=4)
     hdr = table.rows[0].cells
     hdr[0].text = "Parametro"
-    hdr[1].text = "Minimo"
-    hdr[2].text = "Mediano"
-    hdr[3].text = "Massimo"
+    hdr[1].text = "Min"
+    hdr[2].text = "Med"
+    hdr[3].text = "Max"
 
     row = table.rows[1].cells
     row[0].text = "Valori €/m²"
-    row[1].text = f"{zona.val_min_mq:,.0f}".replace(",", ".")
-    row[2].text = f"{zona.val_med_mq:,.0f}".replace(",", ".")
-    row[3].text = f"{zona.val_max_mq:,.0f}".replace(",", ".")
+    row[1].text = f"{zona_omi.val_min_mq:,.0f} €/m²".replace(",", ".")
+    row[2].text = f"{zona_omi.val_med_mq:,.0f} €/m²".replace(",", ".")
+    row[3].text = f"{zona_omi.val_max_mq:,.0f} €/m²".replace(",", ".")
 
-    doc.add_heading("4. Interpretazione sintetica", level=2)
-    doc.add_paragraph(
-        f"Il valore mediano di {zona.val_med_mq:,.0f} €/m² indica che "
-        f"la zona '{zona.zona_codice}' è una fascia di mercato "
-        f"generalmente { 'alta' if zona.val_med_mq > zona.val_max_mq*0.7 else 'media' }."
+    # ------------------------------
+    # 4. INTERPRETAZIONE
+    # ------------------------------
+    document.add_heading("4. Interpretazione sintetica", level=1)
+
+    med = zona_omi.val_med_mq
+    if med < 2500:
+        fascia = "Fascia bassa"
+    elif med < 4500:
+        fascia = "Fascia media"
+    else:
+        fascia = "Fascia alta"
+
+    document.add_paragraph(
+        f"La zona OMI '{zona_omi.zona_codice}' può essere classificata come **{fascia}** "
+        f"in base al valore mediano di {med:,.0f} €/m²."
     )
 
-    doc.add_heading("5. Note metodologiche", level=2)
-    doc.add_paragraph(
-        "Le quotazioni OMI rappresentano valori statistici ufficiali dell’Agenzia delle Entrate "
-        "espressi in €/m². Non considerano caratteristiche specifiche dell'immobile come "
-        "piano, stato, esposizione, vista, anno di costruzione, qualità del condominio."
+    document.add_paragraph(
+        "Il valore minimo rappresenta immobili da ristrutturare o in condizioni inferiori alla media, "
+        "mentre il valore massimo riflette immobili di alta qualità, piani alti, o contesti premium."
     )
 
+    # ------------------------------
+    # 5. NOTE FINALI
+    # ------------------------------
+    document.add_heading("5. Limiti e note metodologiche", level=1)
+
+    document.add_paragraph(
+        "Le quotazioni OMI sono valori statistici della zona e non tengono conto delle caratteristiche "
+        "specifiche dell'immobile (stato manutentivo, piano, vista, esposizione, anno di ristrutturazione, "
+        "qualità del condominio, presenza di ascensore, ecc.)."
+    )
+
+    document.add_paragraph(
+        "Il presente report non costituisce una perizia asseverata, ma una valutazione statistica "
+        "basata su dati ufficiali dell'Agenzia delle Entrate."
+    )
+
+    # ------------------------------
+    # ESPORTAZIONE
+    # ------------------------------
     buffer = io.BytesIO()
-    doc.save(buffer)
+    document.save(buffer)
     buffer.seek(0)
     return buffer
+
 
 
 # ---------------------------------------------------------
