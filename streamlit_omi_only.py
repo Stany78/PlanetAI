@@ -30,18 +30,31 @@ def build_word_report(
     zona_omi,
 ) -> io.BytesIO:
     """
-    Crea un report Word basato solo sui dati OMI (€/m²),
-    SENZA superficie e senza valore totale.
+    Crea un report Word basato sui soli dati OMI (€/m²),
+    senza superficie e senza valore totale.
+    Il report è strutturato in stile "mini perizia".
     """
     document = Document()
 
+    # -------------------------------------------------
+    # Titolo e intestazione
+    # -------------------------------------------------
     document.add_heading("Report di valutazione OMI", level=1)
     document.add_paragraph(
         f"Data generazione report: {datetime.now().strftime('%d/%m/%Y %H:%M')}"
     )
 
-    # 1. Dati immobile
-    document.add_heading("1. Dati immobile", level=2)
+    document.add_paragraph(
+        "Il presente documento riporta una stima sintetica basata esclusivamente "
+        "sulle quotazioni OMI (Osservatorio del Mercato Immobiliare - Agenzia delle Entrate), "
+        "espresse in €/m², per la zona in cui ricade l'indirizzo indicato."
+    )
+
+    # -------------------------------------------------
+    # 1. Dati di input
+    # -------------------------------------------------
+    document.add_heading("1. Dati di input", level=2)
+
     p = document.add_paragraph()
     p.add_run("Comune inserito: ").bold = True
     p.add_run(comune_input)
@@ -51,47 +64,121 @@ def build_word_report(
     p.add_run(indirizzo_input)
 
     p = document.add_paragraph()
-    p.add_run("Coordinate (lat, lon): ").bold = True
+    p.add_run("Coordinate geografiche (lat, lon): ").bold = True
     p.add_run(f"{lat:.6f}, {lon:.6f}")
 
-    # 2. Dati zona OMI
-    document.add_heading("2. Zona OMI", level=2)
+    # -------------------------------------------------
+    # 2. Inquadramento della zona OMI
+    # -------------------------------------------------
+    document.add_heading("2. Zona OMI di riferimento", level=2)
+
+    comune_omi = str(getattr(zona_omi, "comune", ""))
+    provincia_omi = str(getattr(zona_omi, "provincia", ""))
+    codice_zona = str(getattr(zona_omi, "zona_codice", ""))
+    descr_zona = str(getattr(zona_omi, "zona_descrizione", ""))
 
     p = document.add_paragraph()
     p.add_run("Comune (OMI): ").bold = True
-    p.add_run(str(zona_omi.comune))
+    p.add_run(comune_omi)
 
     p = document.add_paragraph()
     p.add_run("Provincia: ").bold = True
-    p.add_run(str(zona_omi.provincia))
+    p.add_run(provincia_omi)
 
     p = document.add_paragraph()
     p.add_run("Zona OMI: ").bold = True
-    p.add_run(str(zona_omi.zona_codice))
+    p.add_run(codice_zona)
 
     p = document.add_paragraph()
     p.add_run("Descrizione zona: ").bold = True
-    p.add_run(str(zona_omi.zona_descrizione))
+    p.add_run(descr_zona)
 
-    # 3. Valori €/m²
-    document.add_heading("3. Valori OMI €/m² (compravendita)", level=2)
-    table = document.add_table(rows=2, cols=4)
+    # Eventuali campi aggiuntivi se presenti nel dataclass (anno / semestre)
+    anno = getattr(zona_omi, "anno", None)
+    semestre = getattr(zona_omi, "semestre", None)
+    if anno is not None and semestre is not None:
+        p = document.add_paragraph()
+        p.add_run("Periodo OMI di riferimento: ").bold = True
+        p.add_run(f"{anno} – semestre {semestre}")
+
+    # -------------------------------------------------
+    # 3. Quotazioni OMI €/m² (compravendita)
+    # -------------------------------------------------
+    document.add_heading("3. Quotazioni OMI €/m² (compravendita)", level=2)
+
+    val_min = float(zona_omi.val_min_mq)
+    val_med = float(zona_omi.val_med_mq)
+    val_max = float(zona_omi.val_max_mq)
+
+    # Tabella valori
+    table = document.add_table(rows=4, cols=2)
+    table.style = "Table Grid"
+
+    # Riga titolo sezione
     hdr = table.rows[0].cells
-    hdr[0].text = "Tipologia"
-    hdr[1].text = "Min"
-    hdr[2].text = "Med"
-    hdr[3].text = "Max"
+    hdr[0].text = "Parametro"
+    hdr[1].text = "Valore"
 
-    row = table.rows[1].cells
-    row[0].text = "Residenziale"
-    row[1].text = f"{zona_omi.val_min_mq:,.0f}".replace(",", ".")
-    row[2].text = f"{zona_omi.val_med_mq:,.0f}".replace(",", ".")
-    row[3].text = f"{zona_omi.val_max_mq:,.0f}".replace(",", ".")
+    # Min
+    row_min = table.rows[1].cells
+    row_min[0].text = "Valore minimo €/m²"
+    row_min[1].text = f"{val_min:,.0f} €/m²".replace(",", ".")
 
-    # Nota finale
+    # Med
+    row_med = table.rows[2].cells
+    row_med[0].text = "Valore mediano €/m²"
+    row_med[1].text = f"{val_med:,.0f} €/m²".replace(",", ".")
+
+    # Max
+    row_max = table.rows[3].cells
+    row_max[0].text = "Valore massimo €/m²"
+    row_max[1].text = f"{val_max:,.0f} €/m²".replace(",", ".")
+
+    # -------------------------------------------------
+    # 4. Interpretazione sintetica
+    # -------------------------------------------------
+    document.add_heading("4. Interpretazione sintetica", level=2)
+
+    # Classificazione qualitativa molto semplice basata sul valore mediano
+    if val_med < 2000:
+        fascia = "fascia tendenzialmente medio-bassa per il contesto urbano."
+    elif 2000 <= val_med < 3500:
+        fascia = "fascia mediamente in linea con i valori urbani di riferimento."
+    elif 3500 <= val_med < 5000:
+        fascia = "fascia medio-alta rispetto alla media urbana."
+    else:
+        fascia = "fascia alta, relativa ad ambiti particolarmente richiesti o centrali."
+
     document.add_paragraph(
-        "Il presente report riporta esclusivamente le quotazioni OMI espresse in €/m², "
-        "senza considerare caratteristiche specifiche dell'immobile (stato, piano, vista, ecc.)."
+        f"Sulla base del valore mediano pari a circa {val_med:,.0f} €/m² "
+        f"(arrotondato), la zona OMI '{codice_zona}' può essere considerata in "
+        f"{fascia}"
+    )
+
+    document.add_paragraph(
+        "Il valore minimo rappresenta generalmente immobili con caratteristiche "
+        "meno favorevoli (stato di manutenzione scadente, piano basso, esposizione "
+        "penalizzata, contesto meno richiesto), mentre il valore massimo si riferisce "
+        "a immobili con caratteristiche migliori (buona esposizione, piano alto, stato "
+        "manutentivo buono/ottimo, contesti più pregiati)."
+    )
+
+    # -------------------------------------------------
+    # 5. Limiti e note metodologiche
+    # -------------------------------------------------
+    document.add_heading("5. Limiti e note metodologiche", level=2)
+
+    document.add_paragraph(
+        "Le quotazioni OMI sono valori indicativi di zona, espressi in €/m², "
+        "elaborati dall'Osservatorio del Mercato Immobiliare dell'Agenzia delle Entrate. "
+        "Esse non tengono conto delle specifiche caratteristiche del singolo immobile, "
+        "come stato manutentivo, piano, presenza di ascensore, spazi esterni, vista, "
+        "anno di costruzione o ristrutturazione, qualità del condominio, ecc."
+    )
+
+    document.add_paragraph(
+        "Il presente report non costituisce una perizia asseverata, ma uno strumento "
+        "di supporto alla valutazione basato su dati statistici ufficiali di mercato."
     )
 
     buffer = io.BytesIO()
