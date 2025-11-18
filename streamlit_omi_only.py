@@ -90,7 +90,7 @@ init_omi()
 # ---------------------------------------------------------
 # UI
 # ---------------------------------------------------------
-st.title("🏙️ Valutazione OMI – PlanetAI")
+st.title("🏙️ PlanetAI – Valutazione OMI")
 
 st.markdown(
     """
