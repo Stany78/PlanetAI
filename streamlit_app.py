@@ -21,7 +21,7 @@ from config import BASE_DIR
 # ===================================================
 
 st.set_page_config(
-    page_title="Doer AI – Stima nuova costruzione",
+    page_title="Planet AI – Stima nuova costruzione",
     page_icon="🏗️",
     layout="centered",
 )
@@ -36,7 +36,7 @@ def init_omi_cache():
 
 init_omi_cache()
 
-st.title("🏙️ Doer AI – Stima nuova costruzione")
+st.title("🏙️ Planet AI – Stima nuova costruzione")
 st.write(
     """
 Questa app stima il **valore €/mq di una nuova costruzione** a partire da:
