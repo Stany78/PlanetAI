@@ -106,9 +106,9 @@ Inserisci **Comune** e **Indirizzo** per ottenere:
 with st.form("form_omi"):
     colA, colB = st.columns(2)
     with colA:
-        comune = st.text_input("Comune", value="Como")
+        comune = st.text_input("Comune", value="")
     with colB:
-        indirizzo = st.text_input("Indirizzo", value="Via Borgovico 150")
+        indirizzo = st.text_input("Indirizzo", value="")
 
     submit = st.form_submit_button("Calcola valutazione OMI 🧮")
 
