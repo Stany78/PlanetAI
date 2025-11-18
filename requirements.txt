@@ -10,7 +10,7 @@ geopy
 python-docx
 matplotlib
 Pillow
-shapely==2.0.2
 fastkml==0.12
 pyproj
 lxml
+pygeoif
