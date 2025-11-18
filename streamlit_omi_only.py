@@ -4,8 +4,8 @@ from agent_core import geocode_indirizzo
 from omi_utils import get_quotazione_omi_da_coordinate, warmup_omi_cache
 
 st.set_page_config(
-    page_title="Planet AI – Valutazione OMI",
-    page_icon="🏙️",
+    page_title="PlanetAI – Valutazione OMI",
+    page_icon="🏢",
     layout="centered",
 )
 
@@ -17,7 +17,7 @@ def init_omi():
 
 init_omi()
 
-st.title("🏙️ Planet AI – Valutazione OMI")
+st.title("🏢 PlanetAI – Valutazione OMI")
 
 st.write(
     """
