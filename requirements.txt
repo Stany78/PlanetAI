@@ -1,4 +1,4 @@
-streamlit==1.32.0
+streamlit>=1.39.0
 pandas==2.2.2
 requests==2.31.0
 numpy==1.26.4
@@ -11,4 +11,4 @@ beautifulsoup4
 geopy
 python-docx
 matplotlib
-pillow==11.0.0
+pillow==11.1.0
