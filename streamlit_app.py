@@ -55,10 +55,10 @@ with st.form("analisi_form"):
     col1, col2, col3 = st.columns(3)
     
     with col1:
-        comune = st.text_input("Comune", value="Como", placeholder="Es: Como")
+        comune = st.text_input("Comune", value="", placeholder="Es: Como")
     
     with col2:
-        via = st.text_input("Via/Indirizzo", value="Via Anzani", placeholder="Es: Via Anzani")
+        via = st.text_input("Via/Indirizzo", value="", placeholder="Es: Via Anzani")
     
     with col3:
         raggio_km = st.number_input("Raggio (km)", min_value=0.5, max_value=5.0, value=1.0, step=0.5)
