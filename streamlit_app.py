@@ -17,7 +17,13 @@ from agent_core import geocode_indirizzo
 from omi_utils import get_quotazione_omi_da_coordinate, warmup_omi_cache
 from immobiliare_scraper import cerca_appartamenti, calcola_statistiche
 from report_generator import genera_report_combinato
-from ai_analyzer import analizza_con_ai, get_api_key
+# Import condizionale per evitare crash se ai_analyzer non esiste
+try:
+    from ai_analyzer import analizza_con_ai, get_api_key
+    AI_AVAILABLE = True
+except ImportError:
+    AI_AVAILABLE = False
+    print("⚠️ Modulo ai_analyzer non disponibile - analisi AI disabilitata")
 from config import REPORTS_DIR
 
 # Configurazione pagina
@@ -158,19 +164,22 @@ except Exception as e:
     report_data = None
     report_filename = None
 
-# 6. ANALISI AI AUTOMATICA
-status_text.text("🤖 Analisi AI in corso...")
-
-try:
-    risultato_ai = analizza_con_ai(
-        comune=comune,
-        via=via,
-        zona_omi=zona_omi,
-        stats_immobiliare=stats_immobiliare
-    )
-except Exception as e:
-    print(f"Errore analisi AI: {e}")
-    risultato_ai = {'success': False, 'error': str(e)}
+# 6. ANALISI AI AUTOMATICA (solo se disponibile)
+if AI_AVAILABLE:
+    status_text.text("🤖 Analisi AI in corso...")
+    
+    try:
+        risultato_ai = analizza_con_ai(
+            comune=comune,
+            via=via,
+            zona_omi=zona_omi,
+            stats_immobiliare=stats_immobiliare
+        )
+    except Exception as e:
+        print(f"Errore analisi AI: {e}")
+        risultato_ai = {'success': False, 'error': str(e)}
+else:
+    risultato_ai = {'success': False, 'error': 'Modulo AI non disponibile'}
 
 status_text.text("✅ Completato!")
 
@@ -411,6 +420,19 @@ with tab3:
 # ----------------------------------------
 with tab4:
     st.header("🤖 Analisi AI con Claude")
+    
+    # Controlla se modulo AI disponibile
+    if not AI_AVAILABLE:
+        st.error("⚠️ Modulo AI non disponibile")
+        st.info("""
+        **Il file `ai_analyzer.py` non è stato trovato nel repository.**
+        
+        Per abilitare l'analisi AI:
+        1. Crea il file `ai_analyzer.py` con le funzioni necessarie
+        2. Carica il file nel repository GitHub
+        3. Fai push e riavvia l'app Streamlit
+        """)
+        st.stop()
     
     # Controlla API key
     api_key = get_api_key()
