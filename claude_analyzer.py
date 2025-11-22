@@ -196,12 +196,15 @@ Devi analizzare i dati di una zona immobiliare e fornire un'analisi professional
 """
         
         # Agenzie immobiliari (se disponibili)
-        if stats_immobiliare.get('top_agenzie'):
+        if stats_immobiliare.get('agenzie'):
             prompt += "\n**Agenzie immobiliari:**\n"
-            for agenzia in stats_immobiliare['top_agenzie'][:5]:
-                nome_agenzia = agenzia.get('agenzia', 'N/D')
-                count_agenzia = agenzia.get('count', 0)
-                prompt += f"- {nome_agenzia}: {count_agenzia} appartamenti\n"
+            # Prendi le top 5 agenzie (se agenzie è una lista di dict)
+            agenzie_list = stats_immobiliare['agenzie']
+            if isinstance(agenzie_list, list):
+                for agenzia in agenzie_list[:5]:
+                    nome_agenzia = agenzia.get('agenzia', 'N/D')
+                    count_agenzia = agenzia.get('count', 0)
+                    prompt += f"- {nome_agenzia}: {count_agenzia} appartamenti\n"
     else:
         prompt += "\n- Nessun dato disponibile dal mercato Immobiliare.it\n"
     
@@ -468,10 +471,10 @@ if __name__ == "__main__":
     stats_test = {
         'n_appartamenti': 15,
         'n_progetti': 3,
-        'prezzo_totale': {'min': 250000, 'mediano': 450000, 'max': 850000},
-        'superficie': {'min': 65, 'mediano': 95, 'max': 150},
-        'prezzo_mq': {'min': 3200, 'mediano': 4500, 'max': 6000},
-        'top_agenzie': [
+        'prezzo': {'min': 250000, 'medio': 450000, 'mediano': 450000, 'max': 850000},
+        'mq': {'min': 65, 'medio': 95, 'mediano': 95, 'max': 150},
+        'prezzo_mq': {'min': 3200, 'medio': 4500, 'mediano': 4500, 'max': 6000},
+        'agenzie': [
             {'agenzia': 'Immobiliare Como Centro', 'count': 8},
             {'agenzia': 'Luxury Homes', 'count': 4}
         ]
