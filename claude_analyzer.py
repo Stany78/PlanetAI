@@ -131,29 +131,47 @@ Devi analizzare i dati di una zona immobiliare e fornire un'analisi professional
     
     if stats_immobiliare and stats_immobiliare.get('n_appartamenti', 0) > 0:
         prompt += f"""
-- Numero appartamenti analizzati: {stats_immobiliare['n_appartamenti']}
-- Progetti immobiliari: {stats_immobiliare['n_progetti']}
-
-**Prezzi totali:**
-- Minimo: €{stats_immobiliare['prezzo_totale']['min']:,.0f}
-- Mediano: €{stats_immobiliare['prezzo_totale']['mediano']:,.0f}
-- Massimo: €{stats_immobiliare['prezzo_totale']['max']:,.0f}
-
-**Superfici (m²):**
-- Minima: {stats_immobiliare['superficie']['min']} m²
-- Mediana: {stats_immobiliare['superficie']['mediano']} m²
-- Massima: {stats_immobiliare['superficie']['max']} m²
-
-**Prezzi al m²:**
-- Minimo: €{stats_immobiliare['prezzo_mq']['min']:,.0f}/m²
-- Mediano: €{stats_immobiliare['prezzo_mq']['mediano']:,.0f}/m²
-- Massimo: €{stats_immobiliare['prezzo_mq']['max']:,.0f}/m²
-
-**Agenzie immobiliari:**
+- Numero appartamenti analizzati: {stats_immobiliare.get('n_appartamenti', 'N/D')}
+- Progetti immobiliari: {stats_immobiliare.get('n_progetti', 'N/D')}
 """
+        
+        # Prezzi totali (se disponibili)
+        if stats_immobiliare.get('prezzo_totale'):
+            prezzo_tot = stats_immobiliare['prezzo_totale']
+            prompt += f"""
+**Prezzi totali:**
+- Minimo: €{prezzo_tot.get('min', 0):,.0f}
+- Mediano: €{prezzo_tot.get('mediano', 0):,.0f}
+- Massimo: €{prezzo_tot.get('max', 0):,.0f}
+"""
+        
+        # Superfici (se disponibili)
+        if stats_immobiliare.get('superficie'):
+            superficie = stats_immobiliare['superficie']
+            prompt += f"""
+**Superfici (m²):**
+- Minima: {superficie.get('min', 0)} m²
+- Mediana: {superficie.get('mediano', 0)} m²
+- Massima: {superficie.get('max', 0)} m²
+"""
+        
+        # Prezzi al m² (se disponibili)
+        if stats_immobiliare.get('prezzo_mq'):
+            prezzo_mq = stats_immobiliare['prezzo_mq']
+            prompt += f"""
+**Prezzi al m²:**
+- Minimo: €{prezzo_mq.get('min', 0):,.0f}/m²
+- Mediano: €{prezzo_mq.get('mediano', 0):,.0f}/m²
+- Massimo: €{prezzo_mq.get('max', 0):,.0f}/m²
+"""
+        
+        # Agenzie immobiliari (se disponibili)
         if stats_immobiliare.get('top_agenzie'):
+            prompt += "\n**Agenzie immobiliari:**\n"
             for agenzia in stats_immobiliare['top_agenzie'][:5]:
-                prompt += f"- {agenzia['agenzia']}: {agenzia['count']} appartamenti\n"
+                nome_agenzia = agenzia.get('agenzia', 'N/D')
+                count_agenzia = agenzia.get('count', 0)
+                prompt += f"- {nome_agenzia}: {count_agenzia} appartamenti\n"
     else:
         prompt += "\n- Nessun dato disponibile dal mercato Immobiliare.it\n"
     
@@ -259,6 +277,10 @@ def analizza_con_ai(
         }
     
     try:
+        # Debug: stampa struttura dati ricevuti
+        print(f"[DEBUG] zona_omi keys: {zona_omi.keys() if zona_omi else 'None'}")
+        print(f"[DEBUG] stats_immobiliare keys: {stats_immobiliare.keys() if stats_immobiliare else 'None'}")
+        
         # Calcola gap analysis se possibile
         gap_analysis = calcola_gap_analysis(zona_omi, stats_immobiliare)
         
