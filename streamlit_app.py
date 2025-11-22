@@ -41,7 +41,7 @@ st.title("🏢 Planet AI - Analisi Immobiliare Completa")
 st.markdown("""
 Analizza una zona immobiliare combinando:
 - **📊 Dati OMI** (valori ufficiali rogiti - Agenzia delle Entrate)
-- **🏠 Mercato Immobiliare.it** (offerte attuali nuove costruzioni)
+- **🏠 Mercato Immobiliare** (offerte attuali nuove costruzioni)
 """)
 
 st.markdown("---")
@@ -115,7 +115,7 @@ if zona_omi_obj:
     }
 
 # 3. SCRAPING IMMOBILIARE.IT
-status_text.text("🏠 Scraping Immobiliare.it...")
+status_text.text("🏠 Scraping web")
 progress_bar.progress(60)
 
 appartamenti = cerca_appartamenti(lat, lon, raggio_km, max_pagine=5)
@@ -180,7 +180,7 @@ st.markdown("---")
 # ========================================
 
 # TAB per organizzare output
-tab1, tab2, tab3, tab4 = st.tabs(["📊 Dati OMI", "🏠 Immobiliare.it", "📈 Confronto", "📄 Report"])
+tab1, tab2, tab3, tab4 = st.tabs(["📊 Dati OMI", "🏠 Web", "📈 Confronto", "📄 Report"])
 
 # ----------------------------------------
 # TAB 1: DATI OMI
@@ -213,7 +213,7 @@ with tab1:
 # TAB 2: IMMOBILIARE.IT
 # ----------------------------------------
 with tab2:
-    st.header("🏠 Analisi Mercato Immobiliare.it")
+    st.header("🏠 Analisi Mercato Immobiliare")
     
     if stats_immobiliare and stats_immobiliare['n_appartamenti'] > 0:
         
@@ -295,7 +295,7 @@ with tab2:
             st.bar_chart(fasce_mq.set_index('Fascia'))
         
     else:
-        st.warning("⚠️ Nessun appartamento trovato su Immobiliare.it per questa zona.")
+        st.warning("⚠️ Nessun appartamento trovato sul web per questa zona.")
 
 # ----------------------------------------
 # TAB 3: CONFRONTO
