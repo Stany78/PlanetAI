@@ -6,7 +6,6 @@ Generatore report Word combinato:
 """
 
 import os
-import re
 from datetime import datetime
 from typing import Dict, Optional
 import pandas as pd
@@ -14,86 +13,6 @@ import pandas as pd
 from docx import Document
 from docx.shared import Pt, RGBColor, Inches
 from docx.enum.text import WD_ALIGN_PARAGRAPH
-
-
-
-
-def aggiungi_testo_formattato(paragraph, text):
-    """
-    Aggiunge testo a un paragrafo gestendo la formattazione Markdown (bold).
-    """
-    # Pattern per **bold**
-    parts = re.split(r'(\*\*.*?\*\*)', text)
-    
-    for part in parts:
-        if part.startswith('**') and part.endswith('**'):
-            # Testo bold
-            bold_text = part[2:-2]
-            run = paragraph.add_run(bold_text)
-            run.bold = True
-        else:
-            # Testo normale
-            paragraph.add_run(part)
-
-
-def converti_markdown_a_docx(doc, markdown_text):
-    """
-    Converte testo Markdown in paragrafi Word formattati.
-    
-    Gestisce:
-    - Headers (##, ###, ####)
-    - Bold (**text**)
-    - Liste puntate (-, *, â€¢)
-    - Paragrafi normali
-    """
-    lines = markdown_text.split('\n')
-    
-    i = 0
-    while i < len(lines):
-        line = lines[i].strip()
-        
-        # Salta righe vuote
-        if not line:
-            i += 1
-            continue
-        
-        # Headers ## (livello 1)
-        if line.startswith('## '):
-            text = line.replace('## ', '').strip()
-            heading = doc.add_heading(text, level=1)
-            heading_run = heading.runs[0]
-            heading_run.font.color.rgb = RGBColor(0, 51, 102)
-            i += 1
-            continue
-        
-        # Headers ### (livello 2)
-        if line.startswith('### '):
-            text = line.replace('### ', '').strip()
-            heading = doc.add_heading(text, level=2)
-            heading_run = heading.runs[0]
-            heading_run.font.color.rgb = RGBColor(68, 114, 196)
-            i += 1
-            continue
-        
-        # Headers #### (livello 3)
-        if line.startswith('#### '):
-            text = line.replace('#### ', '').strip()
-            heading = doc.add_heading(text, level=3)
-            i += 1
-            continue
-        
-        # Liste puntate
-        if line.startswith('- ') or line.startswith('* ') or line.startswith('â€¢ '):
-            text = line.lstrip('-*â€¢ ').strip()
-            p = doc.add_paragraph(style='List Bullet')
-            aggiungi_testo_formattato(p, text)
-            i += 1
-            continue
-        
-        # Paragrafi normali
-        p = doc.add_paragraph()
-        aggiungi_testo_formattato(p, line)
-        i += 1
 
 
 def genera_report_combinato(
@@ -174,76 +93,6 @@ def genera_report_combinato(
         info_table.rows[i].cells[0].paragraphs[0].runs[0].font.bold = True
     
     doc.add_paragraph()
-    
-    
-    # ========================================
-    # ANALISI AI (se disponibile)
-    # ========================================
-    if analisi_ai and analisi_ai.get('success'):
-        doc.add_page_break()
-        
-        # Titolo sezione
-        heading = doc.add_heading('🤖 ANALISI AI - EXECUTIVE REPORT', 1)
-        heading_run = heading.runs[0]
-        heading_run.font.color.rgb = RGBColor(0, 102, 204)
-        
-        p = doc.add_paragraph()
-        run = p.add_run('Analisi professionale generata da Claude (Anthropic)')
-        run.font.size = Pt(10)
-        run.font.italic = True
-        run.font.color.rgb = RGBColor(100, 100, 100)
-        
-        doc.add_paragraph()
-        
-        # Gap Analysis (se disponibile)
-        if analisi_ai.get('gap_analysis'):
-            gap = analisi_ai['gap_analysis']
-            
-            doc.add_heading('Gap Analysis: OMI vs Mercato', 2)
-            
-            gap_table = doc.add_table(rows=4, cols=2)
-            gap_table.style = 'Medium Shading 1 Accent 1'
-            
-            gap_cells = [
-                ('OMI Mediano', f"€{gap['omi_mediano']:,.0f}/m²"),
-                ('Mercato Mediano', f"€{gap['mercato_mediano']:,.0f}/m²"),
-                ('Gap Assoluto', f"€{gap['gap_assoluto']:,.0f}/m²"),
-                ('Gap Percentuale', f"{gap['gap_percentuale']:+.1f}%")
-            ]
-            
-            for i, (label, value) in enumerate(gap_cells):
-                gap_table.rows[i].cells[0].text = label
-                gap_table.rows[i].cells[0].paragraphs[0].runs[0].font.bold = True
-                gap_table.rows[i].cells[1].text = value
-                
-                # Colora il gap percentuale
-                if i == 3:  # Gap percentuale
-                    value_run = gap_table.rows[i].cells[1].paragraphs[0].runs[0]
-                    if gap['gap_percentuale'] > 10:
-                        value_run.font.color.rgb = RGBColor(192, 0, 0)  # Rosso
-                        value_run.font.bold = True
-                    elif gap['gap_percentuale'] < -10:
-                        value_run.font.color.rgb = RGBColor(0, 176, 80)  # Verde
-                        value_run.font.bold = True
-            
-            doc.add_paragraph()
-        
-        # Analisi completa in Markdown
-        if analisi_ai.get('analisi_completa'):
-            converti_markdown_a_docx(doc, analisi_ai['analisi_completa'])
-        
-        doc.add_paragraph()
-        
-        # Note finali
-        p = doc.add_paragraph()
-        run = p.add_run('Nota: ')
-        run.font.bold = True
-        run.font.size = Pt(9)
-        run2 = p.add_run('Questa analisi è stata generata automaticamente da intelligenza artificiale e deve essere considerata come supporto decisionale. Si raccomanda di validare le conclusioni con analisi approfondite e consulenza professionale.')
-        run2.font.size = Pt(9)
-        run2.font.italic = True
-        run2.font.color.rgb = RGBColor(100, 100, 100)
-    
     
     # ========================================
     # SEZIONE 2: DATI OMI
@@ -391,6 +240,78 @@ def genera_report_combinato(
         doc.add_paragraph()
     
     # ========================================
+    # SEZIONE ANALISI AI (se disponibile)
+    # ========================================
+    if analisi_ai and analisi_ai.get('success'):
+        doc.add_page_break()
+        doc.add_heading('🤖 Analisi AI con Claude', 1)
+        
+        p = doc.add_paragraph()
+        run = p.add_run('Analisi generata automaticamente da Claude (Anthropic)')
+        run.font.size = Pt(9)
+        run.font.italic = True
+        run.font.color.rgb = RGBColor(100, 100, 100)
+        doc.add_paragraph()
+        
+        # Gap Analysis
+        if analisi_ai.get('gap_analysis'):
+            gap = analisi_ai['gap_analysis']
+            doc.add_heading('Gap OMI vs Mercato', 2)
+            
+            gap_table = doc.add_table(rows=4, cols=2)
+            gap_table.style = 'Light Grid Accent 1'
+            
+            gap_data = [
+                ['OMI Mediano', f"€{gap['omi_mediano']:,.0f}/m²"],
+                ['Mercato Mediano', f"€{gap['mercato_mediano']:,.0f}/m²"],
+                ['Differenza', f"€{gap['gap_assoluto']:,.0f}/m²"],
+                ['Percentuale', f"{gap['gap_percentuale']:+.1f}%"]
+            ]
+            
+            for i, (label, value) in enumerate(gap_data):
+                gap_table.rows[i].cells[0].text = label
+                gap_table.rows[i].cells[0].paragraphs[0].runs[0].font.bold = True
+                gap_table.rows[i].cells[1].text = value
+            
+            doc.add_paragraph()
+        
+        # Analisi testuale (semplice - niente markdown parsing)
+        if analisi_ai.get('analisi_completa'):
+            testo_analisi = analisi_ai['analisi_completa']
+            
+            # Dividi in paragrafi (ogni riga vuota = nuovo paragrafo)
+            paragrafi = testo_analisi.split('\n\n')
+            
+            for para in paragrafi:
+                para = para.strip()
+                if not para:
+                    continue
+                
+                # Se inizia con ##, è un titolo
+                if para.startswith('## '):
+                    titolo = para.replace('## ', '').strip()
+                    doc.add_heading(titolo, 2)
+                elif para.startswith('### '):
+                    titolo = para.replace('### ', '').strip()
+                    doc.add_heading(titolo, 3)
+                else:
+                    # Paragrafo normale
+                    doc.add_paragraph(para)
+        
+        doc.add_paragraph()
+        
+        # Disclaimer
+        p = doc.add_paragraph()
+        run = p.add_run('Nota: ')
+        run.font.bold = True
+        run.font.size = Pt(9)
+        run2 = p.add_run('Questa analisi è stata generata da intelligenza artificiale e deve essere considerata come supporto decisionale.')
+        run2.font.size = Pt(9)
+        run2.font.italic = True
+        
+        doc.add_paragraph()
+    
+        # ========================================
     # SEZIONE 5: CONFRONTO OMI vs MERCATO
     # ========================================
     doc.add_heading('📊 Confronto OMI vs Mercato', 1)
@@ -418,6 +339,9 @@ def genera_report_combinato(
             doc.add_paragraph('Il mercato quota sotto i valori OMI. Possibili opportunità o necessità di rilancio del settore.')
         
         doc.add_paragraph()
+        
+        # Spazio per analisi AI futura
+
     
     # ========================================
     # FOOTER
