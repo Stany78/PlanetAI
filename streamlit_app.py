@@ -72,9 +72,16 @@ with st.form("analisi_form"):
     
     st.markdown("---")
     
+    # Opzione Analisi AI
+    col_ai, col_space = st.columns([1, 3])
+    with col_ai:
+        abilita_ai = st.checkbox("🤖 Abilita Analisi AI", value=True, help="Genera un'analisi professionale con Claude AI")
+    
+    st.markdown("---")
+    
     col_btn1, col_btn2 = st.columns([1, 4])
     with col_btn1:
-        submit = st.form_submit_button("🔍 Avvia Analisi", width="stretch")
+        submit = st.form_submit_button("🔍 Avvia Analisi", use_container_width=True)
 
 # Stop se non submit
 if not submit:
@@ -165,8 +172,8 @@ except Exception as e:
     report_data = None
     report_filename = None
 
-# 6. ANALISI AI AUTOMATICA (solo se disponibile)
-if CLAUDE_AVAILABLE:
+# 6. ANALISI AI AUTOMATICA (solo se abilitata dall'utente)
+if abilita_ai and CLAUDE_AVAILABLE:
     status_text.text("🤖 Analisi AI in corso...")
     
     try:
@@ -180,7 +187,11 @@ if CLAUDE_AVAILABLE:
         print(f"Errore analisi AI: {e}")
         risultato_ai = {'success': False, 'error': str(e)}
 else:
-    risultato_ai = {'success': False, 'error': 'Modulo AI non disponibile'}
+    if not abilita_ai:
+        print("ℹ️ Analisi AI disabilitata dall'utente")
+        risultato_ai = {'success': False, 'error': 'Analisi AI disabilitata dall\'utente'}
+    else:
+        risultato_ai = {'success': False, 'error': 'Modulo AI non disponibile'}
 
 status_text.text("✅ Completato!")
 
@@ -435,30 +446,6 @@ with tab4:
         """)
         st.stop()
     
-    # Controlla API key
-    api_key = get_api_key()
-    
-    if not api_key:
-        st.warning("⚠️ API key Anthropic non configurata")
-        st.info("""
-        **Come configurare:**
-        
-        **Locale:**
-        Crea file `.env` con:
-        ```
-        ANTHROPIC_API_KEY=sk-ant-api03-...
-        ```
-        
-        **Streamlit Cloud:**
-        Settings → Secrets → Aggiungi:
-        ```toml
-        ANTHROPIC_API_KEY = "sk-ant-api03-..."
-        ```
-        
-        **Ottieni API key:** https://console.anthropic.com
-        """)
-        st.stop()
-    
     # Verifica dati disponibili
     if 'analisi_data' not in st.session_state:
         st.warning("⚠️ Esegui prima un'analisi per vedere l'analisi AI")
@@ -466,9 +453,23 @@ with tab4:
     
     data = st.session_state.analisi_data
     
-    # Mostra analisi (già generata automaticamente durante l'elaborazione)
+    # Verifica se l'utente ha abilitato l'AI durante l'analisi
     if 'analisi_ai' in data and data['analisi_ai']:
         risultato = data['analisi_ai']
+        
+        # Controlla se è stata disabilitata dall'utente
+        if not risultato.get('success') and 'disabilitata dall\'utente' in risultato.get('error', ''):
+            st.info("""
+            ℹ️ **Analisi AI disabilitata**
+            
+            Hai scelto di non eseguire l'analisi AI durante questa ricerca.
+            
+            Per ottenere un'analisi AI:
+            1. Torna alla Home
+            2. Seleziona la checkbox "🤖 Abilita Analisi AI"
+            3. Avvia una nuova analisi
+            """)
+            st.stop()
         
         if risultato['success']:
             
