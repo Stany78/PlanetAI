@@ -150,6 +150,7 @@ try:
         raggio_km=raggio_km,
         zona_omi=zona_omi,
         stats_immobiliare=stats_immobiliare,
+        analisi_ai=risultato_ai,  # Passa anche l'analisi AI
         output_dir=REPORTS_DIR
     )
     
