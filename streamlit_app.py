@@ -143,7 +143,30 @@ stats_immobiliare = calcola_statistiche(appartamenti) if appartamenti else None
 progress_bar.progress(100)
 status_text.text("✅ Analisi completata!")
 
-# 5. GENERA REPORT AUTOMATICAMENTE
+# 5. ANALISI AI AUTOMATICA (solo se abilitata dall'utente)
+if abilita_ai and CLAUDE_AVAILABLE:
+    status_text.text("🤖 Analisi AI in corso...")
+    
+    try:
+        risultato_ai = analizza_con_ai(
+            comune=comune,
+            via=via,
+            zona_omi=zona_omi,
+            stats_immobiliare=stats_immobiliare
+        )
+    except Exception as e:
+        print(f"Errore analisi AI: {e}")
+        risultato_ai = {'success': False, 'error': str(e)}
+else:
+    if not abilita_ai:
+        print("ℹ️ Analisi AI disabilitata dall'utente")
+        risultato_ai = {'success': False, 'error': 'Analisi AI disabilitata dall\'utente'}
+    else:
+        risultato_ai = {'success': False, 'error': 'Modulo AI non disponibile'}
+
+status_text.text("✅ Completato!")
+
+# 6. GENERA REPORT AUTOMATICAMENTE
 status_text.text("📝 Generazione report Word...")
 
 try:
@@ -172,28 +195,6 @@ except Exception as e:
     report_data = None
     report_filename = None
 
-# 6. ANALISI AI AUTOMATICA (solo se abilitata dall'utente)
-if abilita_ai and CLAUDE_AVAILABLE:
-    status_text.text("🤖 Analisi AI in corso...")
-    
-    try:
-        risultato_ai = analizza_con_ai(
-            comune=comune,
-            via=via,
-            zona_omi=zona_omi,
-            stats_immobiliare=stats_immobiliare
-        )
-    except Exception as e:
-        print(f"Errore analisi AI: {e}")
-        risultato_ai = {'success': False, 'error': str(e)}
-else:
-    if not abilita_ai:
-        print("ℹ️ Analisi AI disabilitata dall'utente")
-        risultato_ai = {'success': False, 'error': 'Analisi AI disabilitata dall\'utente'}
-    else:
-        risultato_ai = {'success': False, 'error': 'Modulo AI non disponibile'}
-
-status_text.text("✅ Completato!")
 
 # SALVA IN SESSION STATE per mantenere i dati
 st.session_state.analisi_data = {
