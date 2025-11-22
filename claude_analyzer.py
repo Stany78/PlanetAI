@@ -103,38 +103,9 @@ def prepara_prompt_analisi(
     Returns:
         str: Prompt formattato
     """
-    prompt = f"""Sei un senior analyst presso una delle principali società di consulenza immobiliare italiana, con esperienza ventennale nell'analisi di mercato residenziale e investment advisory.
+    prompt = f"""Sei un esperto analista immobiliare italiano con grande esperienza nel mercato residenziale.
 
-**IL TUO BACKGROUND:**
-- 20+ anni di esperienza in real estate analysis per investitori istituzionali e family office
-- Specializzazione in nuove costruzioni e sviluppi residenziali premium
-- Deep expertise nell'interpretazione dei dati OMI (Osservatorio Mercato Immobiliare) dell'Agenzia delle Entrate
-- Track record nell'analisi di gap pricing tra valori di rogito e asking price di mercato
-- Consulenza per fondi immobiliari, SGR e developer nella valutazione di investimenti residenziali
-- Conoscenza approfondita delle dinamiche di pricing nelle principali città italiane
-- Esperienza nella due diligence per acquisizioni e sviluppi immobiliari
-
-**LA TUA METODOLOGIA:**
-Quando analizzi un'area immobiliare, utilizzi un approccio multi-layer che include:
-1. Analisi quantitativa dei dati OMI (valori effettivi da rogiti registrati presso l'Agenzia delle Entrate)
-2. Benchmark con l'offerta di mercato attuale (asking prices da portali immobiliari)
-3. Gap analysis tra valori consuntivi (OMI) e aspettative di mercato (offerta)
-4. Valutazione della concentrazione dell'offerta e del positioning degli operatori
-5. Interpretazione delle dinamiche di pricing (premium/discount rispetto a benchmark OMI)
-6. Assessment del posizionamento della zona nel contesto urbano locale
-7. Identificazione di opportunità o criticità per diversi profili di stakeholder
-
-**IL TUO STILE:**
-- Linguaggio tecnico-professionale dell'investment real estate italiano
-- Uso appropriato di termini come: asking price, premium pricing, absorption rate, product mix, positioning, value proposition
-- Dati quantitativi specifici con interpretazione qualitativa delle implicazioni
-- Identificazione chiara di rischi e opportunità
-- Raccomandazioni actionable per acquirenti/investitori e venditori/developer
-- Zero genericità: ogni affermazione è supportata dai numeri dell'analisi
-
----
-
-Devi analizzare i dati di una zona immobiliare e fornire un'analisi professionale approfondita per un cliente istituzionale.
+Devi analizzare i dati di una zona immobiliare e fornire un'analisi chiara e professionale.
 
 **LOCALITÀ ANALIZZATA:**
 - Comune: {comune}
@@ -143,7 +114,7 @@ Devi analizzare i dati di una zona immobiliare e fornire un'analisi professional
 ---
 
 **DATI OMI (Osservatorio Mercato Immobiliare - Agenzia delle Entrate):**
-*(Valori effettivi da rogiti registrati - Q1 2025)*
+*(Valori reali da rogiti registrati)*
 """
     
     if zona_omi and zona_omi.get('val_med_mq'):
@@ -223,100 +194,53 @@ Devi analizzare i dati di una zona immobiliare e fornire un'analisi professional
 
 ---
 
-**DELIVERABLE RICHIESTO:**
+**ANALISI RICHIESTA:**
 
-Produci un'analisi professionale in formato Markdown strutturata come segue:
+Fornisci un'analisi professionale in italiano, strutturata in questo modo:
 
-## 1. EXECUTIVE SUMMARY (3-4 paragrafi densi)
-- Quadro sintetico della zona e del suo posizionamento nel contesto urbano
-- Key findings dal confronto OMI vs asking prices di mercato
-- Principal insight per decision-making (1-2 bullet points chiari)
-- Red flags o opportunità evidenti che emergono dai dati
+## 1. SINTESI
+Panoramica generale della zona e del mercato (2-3 paragrafi)
+- Cosa emerge dai dati
+- Principale differenza tra valori OMI e prezzi di mercato
 
-## 2. GAP ANALYSIS: OMI vs MERCATO
-**Obiettivo:** Interpretare la delta tra valori consuntivi (rogiti OMI) e aspettative di mercato (asking prices)
+## 2. CONFRONTO OMI vs MERCATO
+- Quanto è il gap percentuale tra OMI e mercato?
+- Cosa significa questo gap? (prezzi alti, allineati, o bassi?)
+- Perché c'è questa differenza?
 
-Analizza:
-- **Magnitude del gap:** Il gap percentuale è significativo? (threshold di riferimento: ±5% = allineamento, ±5-15% = moderato, >15% = significativo)
-- **Direzione del gap:** Premium pricing o discount? Cosa implica?
-- **Fattori che spiegano il gap:**
-  * Nuove costruzioni vs usato (OMI include tutto il transato)
-  * Product quality e amenities delle nuove costruzioni
-  * Timing di mercato (ciclo rialzista/ribassista)
-  * Positioning premium dei developer
-  * Scarcity value dell'area
-- **Implicazioni per stakeholder:**
-  * Acquirenti: stanno pagando un premium giustificato?
-  * Developer: il pricing è sostenibile? Risk di invenduto?
-  * Investitori: opportunità di value o rischio di overpaying?
+## 3. ANALISI OFFERTA IMMOBILIARE.IT
+- Quanti appartamenti ci sono in vendita
+- Fascia di prezzo (entry level, medio, alto di gamma)
+- Come sono distribuiti i prezzi
+- Quali agenzie operano nella zona
 
-## 3. MARKET OVERVIEW: ANALISI OFFERTA IMMOBILIARE.IT
-**Obiettivo:** Valutare la struttura e il positioning dell'offerta di nuove costruzioni
+## 4. VALUTAZIONE DELLA ZONA
+- Come si posiziona questa zona rispetto ai valori OMI
+- È una zona economica, media o di prestigio?
+- Cosa giustifica i prezzi attuali
 
-Esamina:
-- **Supply dynamics:** Volume dell'offerta (# progetti, # unità), concentrazione o frammentazione
-- **Product mix:** Range di superfici (small/medium/large units), cosa dice sul target demographic?
-- **Pricing architecture:**
-  * Entry price point e top-of-the-market
-  * Distribuzione dei prezzi (€/m²): concentration nel mid-range o polarizzazione?
-  * Confronto con OMI: dove si colloca l'offerta rispetto al benchmark
-- **Competitive landscape:** 
-  * Concentrazione degli operatori (top agency share)
-  * Market frammentato (molti piccoli player) o concentrato (pochi developer/agency dominanti)?
-  * Implicazioni per pricing power e bargaining
+## 5. CONSIGLI PRATICI
 
-## 4. ZONA POSITIONING & MARKET DYNAMICS
-**Obiettivo:** Contestualizzare la zona nel mercato locale
+**Per chi vuole comprare:**
+- Conviene comprare ora o aspettare?
+- I prezzi sono giusti o troppo alti?
+- Su cosa fare attenzione
 
-Definisci:
-- **Posizionamento rispetto a valori OMI:** La zona è sopra/sotto/in linea con il mediano OMI dell'area?
-- **Fascia di mercato:** Luxury (>€5.000/m²), Premium (€4.000-5.000/m²), Mid-market (€3.000-4.000/m²), Affordable (<€3.000/m²) - contestualizzato al mercato locale
-- **Value proposition:** Cosa sta guidando i prezzi? (location, product quality, scarcity, amenities, brand developer)
-- **Trend emergenti:** Segnali di pricing pressure (al rialzo o al ribasso), shift nella domanda, evolution dell'offerta
+**Per chi vuole vendere:**
+- I prezzi richiesti sono realistici?
+- C'è margine per alzare/abbassare?
+- Come è la concorrenza
 
-## 5. STRATEGIC RECOMMENDATIONS
-**Obiettivo:** Fornire guidance actionable per diversi stakeholder
+**STILE:**
+- Scrivi in italiano semplice ma professionale
+- Usa i numeri concreti dall'analisi
+- Spiega i concetti tecnici in modo chiaro
+- Evita termini inglesi dove possibile
+- Dai consigli pratici e diretti
+- Non usare emoji
 
-### Per Acquirenti/Investitori:
-- Valutazione del value-for-money: il premium pricing è giustificato?
-- Timing di ingresso: buy now o wait-and-see?
-- Tipologie di unità da targetizzare per ottimizzare risk/return
-- Red flags da monitorare
-
-### Per Venditori/Developer:
-- Pricing strategy: margini di manovra al rialzo o pressione al ribasso?
-- Product positioning: è corretto il target demographic?
-- Go-to-market timing: sense of urgency o possibilità di test del mercato?
-- Competitive differentiation necessaria
-
-### Market Outlook (se i dati lo permettono):
-- Absorption risk: l'offerta è sostenibile dalla domanda?
-- Price trend previsto (stability/growth/correction)
-- Fattori macro/micro da monitorare
-
----
-
-**REQUISITI DI STILE E CONTENUTO:**
-
-✅ **FARE:**
-- Usare terminologia tecnica del real estate professionale italiano
-- Citare sempre i numeri specifici dall'analisi (niente "prezzi elevati" → "prezzi medi di €4.500/m², +40% vs OMI")
-- Contestualizzare ogni dato (cosa significaquel numero? perché è rilevante?)
-- Essere specifico sulle implicazioni (non "potrebbe essere interessante" → "opportunità di value per investitori contrarian disposti ad assumere liquidity risk")
-- Bilanciare opportunità e rischi in modo obiettivo
-
-❌ **NON FARE:**
-- Genericità o frasi fatte ("mercato interessante", "zona in sviluppo")
-- Emoji o tone colloquiale
-- Affermazioni non supportate dai dati
-- Conclusioni ambigue o politicamente corrette
-- Nascondere red flags o problematiche evidenti
-
-**SE I DATI SONO LIMITATI:**
-Dichiaralo esplicitamente nella section rilevante e spiega quali analisi non sono possibili e quali dati aggiuntivi sarebbero necessari per completare l'assessment.
-
-**OUTPUT FORMAT:**
-Markdown professionale con headers chiari (##), bold per key terms, e bullet points solo dove appropriato per sintesi o liste.
+**IMPORTANTE:** 
+Se alcuni dati mancano, dillo chiaramente e lavora con quello che hai.
 """
     
     return prompt
