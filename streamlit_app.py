@@ -17,13 +17,13 @@ from agent_core import geocode_indirizzo
 from omi_utils import get_quotazione_omi_da_coordinate, warmup_omi_cache
 from immobiliare_scraper import cerca_appartamenti, calcola_statistiche
 from report_generator import genera_report_combinato
-# Import condizionale per evitare crash se ai_analyzer non esiste
+# Import condizionale per evitare crash se claude_analyzer non esiste
 try:
-    from ai_analyzer import analizza_con_ai, get_api_key
-    AI_AVAILABLE = True
+    from claude_analyzer import analizza_con_ai, get_api_key
+    CLAUDE_AVAILABLE = True
 except ImportError:
-    AI_AVAILABLE = False
-    print("⚠️ Modulo ai_analyzer non disponibile - analisi AI disabilitata")
+    CLAUDE_AVAILABLE = False
+    print("⚠️ Modulo claude_analyzer non disponibile - analisi AI disabilitata")
 from config import REPORTS_DIR
 
 # Configurazione pagina
@@ -165,7 +165,7 @@ except Exception as e:
     report_filename = None
 
 # 6. ANALISI AI AUTOMATICA (solo se disponibile)
-if AI_AVAILABLE:
+if CLAUDE_AVAILABLE:
     status_text.text("🤖 Analisi AI in corso...")
     
     try:
@@ -422,13 +422,13 @@ with tab4:
     st.header("🤖 Analisi AI con Claude")
     
     # Controlla se modulo AI disponibile
-    if not AI_AVAILABLE:
+    if not CLAUDE_AVAILABLE:
         st.error("⚠️ Modulo AI non disponibile")
         st.info("""
-        **Il file `ai_analyzer.py` non è stato trovato nel repository.**
+        **Il file `claude_analyzer.py` non è stato trovato nel repository.**
         
         Per abilitare l'analisi AI:
-        1. Crea il file `ai_analyzer.py` con le funzioni necessarie
+        1. Crea il file `claude_analyzer.py` con le funzioni necessarie
         2. Carica il file nel repository GitHub
         3. Fai push e riavvia l'app Streamlit
         """)
