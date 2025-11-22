@@ -158,6 +158,20 @@ except Exception as e:
     report_data = None
     report_filename = None
 
+# 6. ANALISI AI AUTOMATICA
+status_text.text("🤖 Analisi AI in corso...")
+
+try:
+    risultato_ai = analizza_con_ai(
+        comune=comune,
+        via=via,
+        zona_omi=zona_omi,
+        stats_immobiliare=stats_immobiliare
+    )
+except Exception as e:
+    print(f"Errore analisi AI: {e}")
+    risultato_ai = {'success': False, 'error': str(e)}
+
 status_text.text("✅ Completato!")
 
 # SALVA IN SESSION STATE per mantenere i dati
@@ -172,6 +186,7 @@ st.session_state.analisi_data = {
     'stats_immobiliare': stats_immobiliare,
     'report_data': report_data,
     'report_filename': report_filename,
+    'analisi_ai': risultato_ai,
 }
 
 st.markdown("---")
@@ -421,33 +436,16 @@ with tab4:
         """)
         st.stop()
     
-    st.success("✅ API key configurata")
-    
     # Verifica dati disponibili
     if 'analisi_data' not in st.session_state:
-        st.warning("⚠️ Esegui prima un'analisi per usare l'AI")
+        st.warning("⚠️ Esegui prima un'analisi per vedere l'analisi AI")
         st.stop()
     
     data = st.session_state.analisi_data
     
-    # Pulsante analisi AI
-    if st.button("🚀 Avvia Analisi AI", key="btn_ai_analysis", width="stretch"):
-        
-        with st.spinner("🤖 Claude sta analizzando i dati..."):
-            
-            risultato_ai = analizza_con_ai(
-                comune=data['comune'],
-                via=data['via'],
-                zona_omi=data['zona_omi'],
-                stats_immobiliare=data['stats_immobiliare']
-            )
-            
-            # Salva in session state
-            st.session_state.analisi_ai = risultato_ai
-    
-    # Mostra risultati se disponibili
-    if 'analisi_ai' in st.session_state:
-        risultato = st.session_state.analisi_ai
+    # Mostra analisi (già generata automaticamente durante l'elaborazione)
+    if 'analisi_ai' in data and data['analisi_ai']:
+        risultato = data['analisi_ai']
         
         if risultato['success']:
             
@@ -468,6 +466,54 @@ with tab4:
             st.subheader("📝 Analisi Completa")
             st.markdown(risultato['analisi_completa'])
             
+            st.markdown("---")
+            
+            # Download analisi come testo
+            st.subheader("💾 Salva Analisi")
+            
+            # Prepara testo completo
+            testo_completo = f"""ANALISI AI - Planet AI
+{'='*70}
+Località: {data['via']}, {data['comune']}
+Data: {datetime.now().strftime('%d/%m/%Y %H:%M')}
+{'='*70}
+
+"""
+            
+            if risultato.get('gap_analysis'):
+                gap = risultato['gap_analysis']
+                testo_completo += f"""
+GAP ANALYSIS
+------------
+OMI Mediano: €{gap['omi_mediano']:,.0f}/m²
+Mercato Mediano: €{gap['mercato_mediano']:,.0f}/m²
+Gap: {gap['gap_percentuale']:+.1f}% (€{gap['gap_assoluto']:,.0f}/m²)
+
+"""
+            
+            testo_completo += f"""
+ANALISI DETTAGLIATA
+-------------------
+{risultato['analisi_completa']}
+
+"""
+            
+            if risultato.get('raccomandazioni'):
+                testo_completo += "\nRACCOMANDAZIONI\n---------------\n"
+                for i, racc in enumerate(risultato['raccomandazioni'], 1):
+                    testo_completo += f"{i}. {racc}\n"
+            
+            testo_completo += f"\n{'='*70}\nGenerato da Planet AI - Powered by Claude (Anthropic)\n"
+            
+            st.download_button(
+                label="📥 Scarica Analisi AI (TXT)",
+                data=testo_completo,
+                file_name=f"analisi_ai_{data['comune']}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt",
+                mime="text/plain",
+                key="download_ai",
+                width="stretch"
+            )
+            
             # Raccomandazioni
             if risultato.get('raccomandazioni'):
                 st.markdown("---")
@@ -477,12 +523,16 @@ with tab4:
         
         else:
             st.error(f"❌ Errore nell'analisi AI: {risultato.get('error', 'Errore sconosciuto')}")
+    
+    else:
+        st.info("⏳ L'analisi AI verrà generata automaticamente al prossimo avvio dell'analisi.")
+        st.caption("Se hai appena fatto un'analisi e non vedi i risultati, verifica che l'API key sia configurata correttamente.")
 
 # ----------------------------------------
 # TAB 5: REPORT
 # ----------------------------------------
 with tab5:
-    st.header("📄 Report e Download")
+    st.header("📄 Download Report e Dati")
     
     # Controlla se ci sono dati salvati
     if 'analisi_data' not in st.session_state:
@@ -498,20 +548,25 @@ with tab5:
     
     # REPORT WORD
     st.subheader("📝 Report Word Completo")
+    st.write("Report con dati OMI, analisi mercato Immobiliare.it e confronto completo.")
     
     if report_data and report_filename:
-        st.success("✅ Report generato automaticamente durante l'analisi!")
         
-        st.download_button(
-            label="⬇️ Scarica Report Word",
-            data=report_data,
-            file_name=report_filename,
-            mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-            key="download_report",
-            width="stretch"
-        )
+        col1, col2 = st.columns([3, 1])
+        with col1:
+            st.download_button(
+                label="📥 Scarica Report Word",
+                data=report_data,
+                file_name=report_filename,
+                mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                key="download_report",
+                width="stretch"
+            )
+        with col2:
+            st.caption(f"📄 {report_filename}")
         
-        st.caption(f"📄 File: {report_filename}")
+        st.success("✅ Report pronto per il download!")
+        
     else:
         st.error("❌ Errore nella generazione del report. Riprova l'analisi.")
     
@@ -519,19 +574,26 @@ with tab5:
     
     # Download CSV
     st.subheader("📊 Dati Raw (CSV)")
+    st.write("Dati grezzi degli appartamenti per analisi personalizzate.")
     
     if appartamenti_report:
         df_export = pd.DataFrame(appartamenti_report)
         csv = df_export.to_csv(index=False, encoding='utf-8-sig')
         
-        st.download_button(
-            label="⬇️ Scarica CSV Appartamenti",
-            data=csv,
-            file_name=f"appartamenti_{comune_report}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
-            mime="text/csv",
-            key="download_csv",
-            width="stretch"
-        )
+        col1, col2 = st.columns([3, 1])
+        with col1:
+            st.download_button(
+                label="📥 Scarica CSV Appartamenti",
+                data=csv,
+                file_name=f"appartamenti_{comune_report}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
+                mime="text/csv",
+                key="download_csv",
+                width="stretch"
+            )
+        with col2:
+            st.caption(f"📊 {len(appartamenti_report)} record")
+        
+        st.success("✅ CSV pronto per il download!")
     else:
         st.info("Nessun dato disponibile per l'export CSV.")
 
