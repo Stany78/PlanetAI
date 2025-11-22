@@ -17,6 +17,7 @@ from agent_core import geocode_indirizzo
 from omi_utils import get_quotazione_omi_da_coordinate, warmup_omi_cache
 from immobiliare_scraper import cerca_appartamenti, calcola_statistiche
 from report_generator import genera_report_combinato
+from ai_analyzer import analizza_con_ai, get_api_key
 from config import REPORTS_DIR
 
 # Configurazione pagina
@@ -41,7 +42,7 @@ st.title("🏢 Planet AI - Analisi Immobiliare Completa")
 st.markdown("""
 Analizza una zona immobiliare combinando:
 - **📊 Dati OMI** (valori ufficiali rogiti - Agenzia delle Entrate)
-- **🏠 Mercato Immobiliare** (offerte attuali nuove costruzioni)
+- **🏠 Mercato Immobiliare.it** (offerte attuali nuove costruzioni)
 """)
 
 st.markdown("---")
@@ -55,10 +56,10 @@ with st.form("analisi_form"):
     col1, col2, col3 = st.columns(3)
     
     with col1:
-        comune = st.text_input("Comune", value="", placeholder="Es: Como")
+        comune = st.text_input("Comune", value="Como", placeholder="Es: Como")
     
     with col2:
-        via = st.text_input("Via/Indirizzo", value="", placeholder="Es: Via Anzani")
+        via = st.text_input("Via/Indirizzo", value="Via Anzani", placeholder="Es: Via Anzani")
     
     with col3:
         raggio_km = st.number_input("Raggio (km)", min_value=0.5, max_value=5.0, value=1.0, step=0.5)
@@ -115,7 +116,7 @@ if zona_omi_obj:
     }
 
 # 3. SCRAPING IMMOBILIARE.IT
-status_text.text("🏠 Scraping web")
+status_text.text("🏠 Scraping Immobiliare.it...")
 progress_bar.progress(60)
 
 appartamenti = cerca_appartamenti(lat, lon, raggio_km, max_pagine=5)
@@ -180,7 +181,7 @@ st.markdown("---")
 # ========================================
 
 # TAB per organizzare output
-tab1, tab2, tab3, tab4 = st.tabs(["📊 Dati OMI", "🏠 Web", "📈 Confronto", "📄 Report"])
+tab1, tab2, tab3, tab4, tab5 = st.tabs(["📊 Dati OMI", "🏠 Immobiliare.it", "📈 Confronto", "🤖 Analisi AI", "📄 Report"])
 
 # ----------------------------------------
 # TAB 1: DATI OMI
@@ -213,7 +214,7 @@ with tab1:
 # TAB 2: IMMOBILIARE.IT
 # ----------------------------------------
 with tab2:
-    st.header("🏠 Analisi Mercato Immobiliare")
+    st.header("🏠 Analisi Mercato Immobiliare.it")
     
     if stats_immobiliare and stats_immobiliare['n_appartamenti'] > 0:
         
@@ -295,7 +296,7 @@ with tab2:
             st.bar_chart(fasce_mq.set_index('Fascia'))
         
     else:
-        st.warning("⚠️ Nessun appartamento trovato sul web per questa zona.")
+        st.warning("⚠️ Nessun appartamento trovato su Immobiliare.it per questa zona.")
 
 # ----------------------------------------
 # TAB 3: CONFRONTO
@@ -391,9 +392,96 @@ with tab3:
         st.warning("⚠️ Dati insufficienti per il confronto.")
 
 # ----------------------------------------
-# TAB 4: REPORT
+# TAB 4: ANALISI AI
 # ----------------------------------------
 with tab4:
+    st.header("🤖 Analisi AI con Claude")
+    
+    # Controlla API key
+    api_key = get_api_key()
+    
+    if not api_key:
+        st.warning("⚠️ API key Anthropic non configurata")
+        st.info("""
+        **Come configurare:**
+        
+        **Locale:**
+        Crea file `.env` con:
+        ```
+        ANTHROPIC_API_KEY=sk-ant-api03-...
+        ```
+        
+        **Streamlit Cloud:**
+        Settings → Secrets → Aggiungi:
+        ```toml
+        ANTHROPIC_API_KEY = "sk-ant-api03-..."
+        ```
+        
+        **Ottieni API key:** https://console.anthropic.com
+        """)
+        st.stop()
+    
+    st.success("✅ API key configurata")
+    
+    # Verifica dati disponibili
+    if 'analisi_data' not in st.session_state:
+        st.warning("⚠️ Esegui prima un'analisi per usare l'AI")
+        st.stop()
+    
+    data = st.session_state.analisi_data
+    
+    # Pulsante analisi AI
+    if st.button("🚀 Avvia Analisi AI", key="btn_ai_analysis", width="stretch"):
+        
+        with st.spinner("🤖 Claude sta analizzando i dati..."):
+            
+            risultato_ai = analizza_con_ai(
+                comune=data['comune'],
+                via=data['via'],
+                zona_omi=data['zona_omi'],
+                stats_immobiliare=data['stats_immobiliare']
+            )
+            
+            # Salva in session state
+            st.session_state.analisi_ai = risultato_ai
+    
+    # Mostra risultati se disponibili
+    if 'analisi_ai' in st.session_state:
+        risultato = st.session_state.analisi_ai
+        
+        if risultato['success']:
+            
+            # Gap Analysis
+            if risultato.get('gap_analysis'):
+                st.subheader("📊 Gap Analysis")
+                gap = risultato['gap_analysis']
+                
+                col1, col2, col3 = st.columns(3)
+                col1.metric("OMI Mediano", f"€{gap['omi_mediano']:,.0f}/m²".replace(',', '.'))
+                col2.metric("Mercato Mediano", f"€{gap['mercato_mediano']:,.0f}/m²".replace(',', '.'))
+                col3.metric("Gap", f"{gap['gap_percentuale']:+.1f}%".replace('.', ','),
+                           delta=f"€{gap['gap_assoluto']:,.0f}/m²".replace(',', '.'))
+                
+                st.markdown("---")
+            
+            # Analisi completa
+            st.subheader("📝 Analisi Completa")
+            st.markdown(risultato['analisi_completa'])
+            
+            # Raccomandazioni
+            if risultato.get('raccomandazioni'):
+                st.markdown("---")
+                st.subheader("💡 Raccomandazioni")
+                for i, racc in enumerate(risultato['raccomandazioni'], 1):
+                    st.markdown(f"**{i}.** {racc}")
+        
+        else:
+            st.error(f"❌ Errore nell'analisi AI: {risultato.get('error', 'Errore sconosciuto')}")
+
+# ----------------------------------------
+# TAB 5: REPORT
+# ----------------------------------------
+with tab5:
     st.header("📄 Report e Download")
     
     # Controlla se ci sono dati salvati
