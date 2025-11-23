@@ -166,7 +166,7 @@ else:
 
 status_text.text("✅ Completato!")
 
-# 6. GENERA REPORT AUTOMATICAMENTE
+# 6. GENERA REPORT AUTOMATICAMENTE (con tutti i dati per analisi developer)
 status_text.text("📝 Generazione report Word...")
 
 try:
@@ -180,7 +180,7 @@ try:
         raggio_km=raggio_km,
         zona_omi=zona_omi,
         stats_immobiliare=stats_immobiliare,
-        analisi_ai=risultato_ai,  # Passa anche l'analisi AI
+        analisi_ai=risultato_ai,
         output_dir=REPORTS_DIR
     )
     
@@ -190,11 +190,12 @@ try:
     
     report_filename = os.path.basename(report_filepath)
     
+    status_text.text("✅ Report generato!")
+    
 except Exception as e:
     print(f"Errore generazione report: {e}")
     report_data = None
     report_filename = None
-
 
 # SALVA IN SESSION STATE per mantenere i dati
 st.session_state.analisi_data = {
@@ -819,7 +820,7 @@ with tab6:
     
     # REPORT WORD
     st.subheader("📝 Report Word Completo")
-    st.write("Report con dati OMI, analisi mercato Immobiliare.it e confronto completo.")
+    st.write("Report con dati OMI, analisi mercato Immobiliare.it, analisi Developer e confronto completo.")
     
     if report_data and report_filename:
         
