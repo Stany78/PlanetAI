@@ -240,79 +240,6 @@ def genera_report_combinato(
         doc.add_paragraph()
     
     # ========================================
-    # SEZIONE ANALISI AI (se disponibile)
-    # ========================================
-    if analisi_ai and analisi_ai.get('success'):
-        doc.add_page_break()
-        doc.add_heading('🤖 Analisi AI con Claude', 1)
-        
-        p = doc.add_paragraph()
-        run = p.add_run('Analisi generata automaticamente da Claude (Anthropic)')
-        run.font.size = Pt(9)
-        run.font.italic = True
-        run.font.color.rgb = RGBColor(100, 100, 100)
-        doc.add_paragraph()
-        
-        # Gap Analysis
-        if analisi_ai.get('gap_analysis'):
-            gap = analisi_ai['gap_analysis']
-            doc.add_heading('Gap OMI vs Mercato', 2)
-            
-            gap_table = doc.add_table(rows=4, cols=2)
-            gap_table.style = 'Light Grid Accent 1'
-            
-            gap_data = [
-                ['OMI Mediano', f"€{gap['omi_mediano']:,.0f}/m²"],
-                ['Mercato Mediano', f"€{gap['mercato_mediano']:,.0f}/m²"],
-                ['Differenza', f"€{gap['gap_assoluto']:,.0f}/m²"],
-                ['Percentuale', f"{gap['gap_percentuale']:+.1f}%"]
-            ]
-            
-            for i, (label, value) in enumerate(gap_data):
-                gap_table.rows[i].cells[0].text = label
-                gap_table.rows[i].cells[0].paragraphs[0].runs[0].font.bold = True
-                gap_table.rows[i].cells[1].text = value
-            
-            doc.add_paragraph()
-        
-        # Analisi testuale (semplice - niente markdown parsing)
-        if analisi_ai.get('analisi_completa'):
-            testo_analisi = analisi_ai['analisi_completa']
-            
-            # Dividi in paragrafi (ogni riga vuota = nuovo paragrafo)
-            paragrafi = testo_analisi.split('\n\n')
-            
-            for para in paragrafi:
-                para = para.strip()
-                if not para:
-                    continue
-                
-                # Se inizia con ##, è un titolo
-                if para.startswith('## '):
-                    titolo = para.replace('## ', '').strip()
-                    doc.add_heading(titolo, 2)
-                elif para.startswith('### '):
-                    titolo = para.replace('### ', '').strip()
-                    doc.add_heading(titolo, 3)
-                else:
-                    # Paragrafo normale
-                    doc.add_paragraph(para)
-        
-        doc.add_paragraph()
-        
-        # Disclaimer
-        p = doc.add_paragraph()
-        run = p.add_run('Nota: ')
-        run.font.bold = True
-        run.font.size = Pt(9)
-        run2 = p.add_run('Questa analisi è stata generata da intelligenza artificiale e deve essere considerata come supporto decisionale.')
-        run2.font.size = Pt(9)
-        run2.font.italic = True
-        
-        doc.add_paragraph()
-    
-        # ========================================
-    # ========================================
     # SEZIONE 4.5: ANALISI DEVELOPER
     # ========================================
     if zona_omi and stats_immobiliare and stats_immobiliare.get('n_appartamenti', 0) > 0:
@@ -480,6 +407,79 @@ def genera_report_combinato(
         # Spazio per analisi AI futura
 
     
+    # ========================================
+    # SEZIONE ANALISI AI (se disponibile)
+    # ========================================
+    if analisi_ai and analisi_ai.get('success'):
+        doc.add_page_break()
+        doc.add_heading('🤖 Analisi AI con Claude', 1)
+        
+        p = doc.add_paragraph()
+        run = p.add_run('Analisi generata automaticamente da Claude (Anthropic)')
+        run.font.size = Pt(9)
+        run.font.italic = True
+        run.font.color.rgb = RGBColor(100, 100, 100)
+        doc.add_paragraph()
+        
+        # Gap Analysis
+        if analisi_ai.get('gap_analysis'):
+            gap = analisi_ai['gap_analysis']
+            doc.add_heading('Gap OMI vs Mercato', 2)
+            
+            gap_table = doc.add_table(rows=4, cols=2)
+            gap_table.style = 'Light Grid Accent 1'
+            
+            gap_data = [
+                ['OMI Mediano', f"€{gap['omi_mediano']:,.0f}/m²"],
+                ['Mercato Mediano', f"€{gap['mercato_mediano']:,.0f}/m²"],
+                ['Differenza', f"€{gap['gap_assoluto']:,.0f}/m²"],
+                ['Percentuale', f"{gap['gap_percentuale']:+.1f}%"]
+            ]
+            
+            for i, (label, value) in enumerate(gap_data):
+                gap_table.rows[i].cells[0].text = label
+                gap_table.rows[i].cells[0].paragraphs[0].runs[0].font.bold = True
+                gap_table.rows[i].cells[1].text = value
+            
+            doc.add_paragraph()
+        
+        # Analisi testuale (semplice - niente markdown parsing)
+        if analisi_ai.get('analisi_completa'):
+            testo_analisi = analisi_ai['analisi_completa']
+            
+            # Dividi in paragrafi (ogni riga vuota = nuovo paragrafo)
+            paragrafi = testo_analisi.split('\n\n')
+            
+            for para in paragrafi:
+                para = para.strip()
+                if not para:
+                    continue
+                
+                # Se inizia con ##, è un titolo
+                if para.startswith('## '):
+                    titolo = para.replace('## ', '').strip()
+                    doc.add_heading(titolo, 2)
+                elif para.startswith('### '):
+                    titolo = para.replace('### ', '').strip()
+                    doc.add_heading(titolo, 3)
+                else:
+                    # Paragrafo normale
+                    doc.add_paragraph(para)
+        
+        doc.add_paragraph()
+        
+        # Disclaimer
+        p = doc.add_paragraph()
+        run = p.add_run('Nota: ')
+        run.font.bold = True
+        run.font.size = Pt(9)
+        run2 = p.add_run('Questa analisi è stata generata da intelligenza artificiale e deve essere considerata come supporto decisionale.')
+        run2.font.size = Pt(9)
+        run2.font.italic = True
+        
+        doc.add_paragraph()
+    
+        # ========================================
     # ========================================
     # FOOTER
     # ========================================

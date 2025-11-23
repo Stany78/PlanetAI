@@ -176,6 +176,42 @@ Devi analizzare i dati di una zona immobiliare e fornire un'analisi chiara e pro
                     nome_agenzia = agenzia.get('agenzia', 'N/D')
                     count_agenzia = agenzia.get('count', 0)
                     prompt += f"- {nome_agenzia}: {count_agenzia} appartamenti\n"
+        
+        # METRICHE DEVELOPER
+        n_app = stats_immobiliare.get('n_appartamenti', 0)
+        n_progetti = stats_immobiliare.get('n_progetti', 0)
+        
+        prompt += "\n---\n\n**METRICHE DEVELOPER:**\n"
+        
+        # Saturazione mercato
+        if n_app < 10:
+            saturazione = "LIBERO (poca concorrenza)"
+        elif n_app < 30:
+            saturazione = "MEDIO (concorrenza normale)"
+        else:
+            saturazione = "SATURO (alta concorrenza)"
+        
+        prompt += f"""
+- Saturazione mercato: {saturazione}
+- Appartamenti/Progetto: {n_app / n_progetti:.1f} (media)
+"""
+        
+        # Concentrazione agenzie (se disponibile dataframe)
+        if stats_immobiliare.get('dataframe') is not None:
+            import pandas as pd
+            df = stats_immobiliare['dataframe']
+            agenzie_stats = df.groupby('agenzia').size()
+            top3_count = agenzie_stats.nlargest(3).sum()
+            top3_share = (top3_count / n_app * 100)
+            
+            if top3_share > 60:
+                concentrazione = "ALTA (pochi operatori dominanti)"
+            elif top3_share > 40:
+                concentrazione = "MEDIA (mix operatori)"
+            else:
+                concentrazione = "BASSA (mercato frammentato)"
+            
+            prompt += f"- Concentrazione Top 3 agenzie: {top3_share:.1f}% - {concentrazione}\n"
     else:
         prompt += "\n- Nessun dato disponibile dal mercato Immobiliare.it\n"
     
@@ -214,12 +250,19 @@ Panoramica generale della zona e del mercato (2-3 paragrafi)
 - Come sono distribuiti i prezzi
 - Quali agenzie operano nella zona
 
-## 4. VALUTAZIONE DELLA ZONA
+## 4. ANALISI DEVELOPER/INVESTITORI
+Usa le metriche Developer fornite per analizzare:
+- **Saturazione mercato**: Quanto è competitivo? (Libero/Medio/Saturo)
+- **Concentrazione agenzie**: Il mercato è frammentato o concentrato?
+- **Pricing strategy**: I prezzi attuali sono sostenibili? Gap OMI giustificato?
+- **Opportunità per developer**: È un buon momento per entrare nel mercato?
+
+## 5. VALUTAZIONE DELLA ZONA
 - Come si posiziona questa zona rispetto ai valori OMI
 - È una zona economica, media o di prestigio?
 - Cosa giustifica i prezzi attuali
 
-## 5. CONSIGLI PRATICI
+## 6. CONSIGLI PRATICI
 
 **Per chi vuole comprare:**
 - Conviene comprare ora o aspettare?
