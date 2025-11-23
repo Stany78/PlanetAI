@@ -312,6 +312,143 @@ def genera_report_combinato(
         doc.add_paragraph()
     
         # ========================================
+    # ========================================
+    # SEZIONE 4.5: ANALISI DEVELOPER
+    # ========================================
+    if zona_omi and stats_immobiliare and stats_immobiliare.get('n_appartamenti', 0) > 0:
+        doc.add_heading('💼 Analisi per Developer/Investitori', 1)
+        
+        n_app = stats_immobiliare['n_appartamenti']
+        n_progetti = stats_immobiliare['n_progetti']
+        omi_med = zona_omi.get('val_med_mq')
+        mercato_med = stats_immobiliare['prezzo_mq']['mediano']
+        
+        # 1. SATURAZIONE MERCATO
+        doc.add_heading('1. Saturazione Mercato', 2)
+        
+        sat_table = doc.add_table(rows=3, cols=2)
+        sat_table.style = 'Light Grid Accent 1'
+        
+        sat_data = [
+            ['Appartamenti in Vendita', str(n_app)],
+            ['Progetti Attivi', str(n_progetti)],
+            ['App/Progetto (media)', f"{n_app / n_progetti:.1f}"]
+        ]
+        
+        for i, (label, value) in enumerate(sat_data):
+            sat_table.rows[i].cells[0].text = label
+            sat_table.rows[i].cells[0].paragraphs[0].runs[0].font.bold = True
+            sat_table.rows[i].cells[1].text = value
+        
+        doc.add_paragraph()
+        
+        # Valutazione
+        doc.add_paragraph('Valutazione:', style='Heading 3')
+        if n_app < 10:
+            doc.add_paragraph('✓ Mercato LIBERO - Poca concorrenza. Buona opportunità di ingresso.')
+        elif n_app < 30:
+            doc.add_paragraph('• Mercato MEDIO - Concorrenza normale. Necessaria differenziazione.')
+        else:
+            doc.add_paragraph('⚠ Mercato SATURO - Alta concorrenza. Necessaria forte differenziazione.')
+        
+        doc.add_paragraph()
+        
+        # 2. PRICING BENCHMARK
+        doc.add_heading('2. Pricing Benchmark', 2)
+        
+        mercato_min = stats_immobiliare['prezzo_mq']['min']
+        mercato_max = stats_immobiliare['prezzo_mq']['max']
+        gap_percentuale = ((mercato_med - omi_med) / omi_med) * 100
+        
+        price_table = doc.add_table(rows=5, cols=2)
+        price_table.style = 'Light Grid Accent 1'
+        
+        price_data = [
+            ['OMI Mediano (Baseline)', f"€{omi_med:,.0f}/m²"],
+            ['Mercato Range', f"€{mercato_min:,.0f} - €{mercato_max:,.0f}/m²"],
+            ['Mercato Mediano', f"€{mercato_med:,.0f}/m²"],
+            ['Gap vs OMI', f"{gap_percentuale:+.1f}%"],
+            ['Sweet Spot Consigliato', f"€{mercato_med:,.0f}/m²"]
+        ]
+        
+        for i, (label, value) in enumerate(price_data):
+            price_table.rows[i].cells[0].text = label
+            price_table.rows[i].cells[0].paragraphs[0].runs[0].font.bold = True
+            price_table.rows[i].cells[1].text = value.replace(',', '.')
+        
+        doc.add_paragraph()
+        
+        # 3. GAP ANALYSIS STRATEGICO
+        doc.add_heading('3. Gap Analysis Strategico', 2)
+        
+        doc.add_paragraph('Interpretazione:', style='Heading 3')
+        
+        if gap_percentuale > 50:
+            doc.add_paragraph('⚠ GAP MOLTO ALTO (+50% vs OMI)')
+            doc.add_paragraph('• Mercato con forte premium su nuove costruzioni')
+            doc.add_paragraph('• Possibile sopravvalutazione - Alto rischio pricing')
+            doc.add_paragraph('• Raccomandazione: Verificare qualità, considera pricing conservativo')
+        elif gap_percentuale > 30:
+            doc.add_paragraph('⚠ GAP SIGNIFICATIVO (+30-50% vs OMI)')
+            doc.add_paragraph('• Premium pricing per nuove costruzioni')
+            doc.add_paragraph('• Mercato accetta sovrapprezzo elevato')
+            doc.add_paragraph('• Raccomandazione: Giustifica premium con alta qualità e marketing forte')
+        elif gap_percentuale > 15:
+            doc.add_paragraph('✓ GAP NORMALE (+15-30% vs OMI)')
+            doc.add_paragraph('• Premium standard nuove costruzioni')
+            doc.add_paragraph('• Mercato equilibrato con margini sani')
+            doc.add_paragraph('• Raccomandazione: Sweet spot ideale per sviluppo')
+        else:
+            doc.add_paragraph('• GAP BASSO (<15% vs OMI)')
+            doc.add_paragraph('• Prezzi allineati a valori rogiti')
+            doc.add_paragraph('• Mercato competitivo con margini contenuti')
+            doc.add_paragraph('• Raccomandazione: Ottimizza costi, focus su volume vendite')
+        
+        doc.add_paragraph()
+        
+        # 4. ANALISI AGENZIE
+        doc.add_heading('4. Principali Operatori', 2)
+        
+        if stats_immobiliare.get('dataframe') is not None:
+            df = stats_immobiliare['dataframe']
+            agenzie_stats = df.groupby('agenzia').size().reset_index(name='count')
+            agenzie_stats = agenzie_stats.sort_values('count', ascending=False).head(5)
+            
+            # Tabella Top 5 agenzie
+            ag_table = doc.add_table(rows=len(agenzie_stats) + 1, cols=3)
+            ag_table.style = 'Light Grid Accent 1'
+            
+            # Header
+            ag_table.rows[0].cells[0].text = 'Agenzia'
+            ag_table.rows[0].cells[1].text = 'N° Appartamenti'
+            ag_table.rows[0].cells[2].text = '% Mercato'
+            for cell in ag_table.rows[0].cells:
+                cell.paragraphs[0].runs[0].font.bold = True
+            
+            # Dati
+            for i, (_, row) in enumerate(agenzie_stats.iterrows(), 1):
+                percentuale = (row['count'] / n_app * 100)
+                ag_table.rows[i].cells[0].text = row['agenzia']
+                ag_table.rows[i].cells[1].text = str(int(row['count']))
+                ag_table.rows[i].cells[2].text = f"{percentuale:.1f}%"
+            
+            doc.add_paragraph()
+            
+            # Concentrazione mercato
+            top3_count = agenzie_stats.head(3)['count'].sum()
+            top3_share = (top3_count / n_app * 100)
+            
+            doc.add_paragraph(f'Concentrazione Top 3: {top3_share:.1f}%', style='Heading 3')
+            
+            if top3_share > 60:
+                doc.add_paragraph('⚠ Mercato concentrato - Pochi operatori dominanti')
+            elif top3_share > 40:
+                doc.add_paragraph('• Mercato moderato - Mix operatori grandi/piccoli')
+            else:
+                doc.add_paragraph('✓ Mercato frammentato - Molti piccoli operatori')
+        
+        doc.add_paragraph()
+    
     # SEZIONE 5: CONFRONTO OMI vs MERCATO
     # ========================================
     doc.add_heading('📊 Confronto OMI vs Mercato', 1)
