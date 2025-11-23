@@ -246,20 +246,17 @@ def genera_report_combinato(
         doc.add_heading('💼 Analisi per Developer/Investitori', 1)
         
         n_app = stats_immobiliare['n_appartamenti']
-        n_progetti = stats_immobiliare['n_progetti']
         omi_med = zona_omi.get('val_med_mq')
         mercato_med = stats_immobiliare['prezzo_mq']['mediano']
         
         # 1. SATURAZIONE MERCATO
         doc.add_heading('1. Saturazione Mercato', 2)
         
-        sat_table = doc.add_table(rows=3, cols=2)
+        sat_table = doc.add_table(rows=1, cols=2)
         sat_table.style = 'Light Grid Accent 1'
         
         sat_data = [
-            ['Appartamenti in Vendita', str(n_app)],
-            ['Progetti Attivi', str(n_progetti)],
-            ['App/Progetto (media)', f"{n_app / n_progetti:.1f}"]
+            ['Appartamenti in Vendita (Nuove Costruzioni)', str(n_app)]
         ]
         
         for i, (label, value) in enumerate(sat_data):

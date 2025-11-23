@@ -265,12 +265,6 @@ with tab2:
         
         st.subheader(f"📋 Appartamenti analizzati: {stats_immobiliare['n_appartamenti']}")
         
-        col_info1, col_info2 = st.columns(2)
-        with col_info1:
-            st.metric("Progetti immobiliari", stats_immobiliare['n_progetti'])
-        with col_info2:
-            st.metric("App. per progetto (media)", f"{stats_immobiliare['n_appartamenti'] / stats_immobiliare['n_progetti']:.1f}")
-        
         st.markdown("---")
         
         # Statistiche principali
@@ -297,11 +291,10 @@ with tab2:
         agenzie = df.groupby('agenzia').agg({
             'prezzo': ['count', 'mean'],
             'mq': 'mean',
-            'prezzo_mq': 'mean',
-            'progetto_id': 'nunique'
+            'prezzo_mq': 'mean'
         }).reset_index()
         
-        agenzie.columns = ['Agenzia', 'N° Appartamenti', 'Prezzo Medio', 'MQ Medio', 'Prezzo/mq Medio', 'N° Progetti']
+        agenzie.columns = ['Agenzia', 'N° Appartamenti', 'Prezzo Medio', 'MQ Medio', 'Prezzo/mq Medio']
         agenzie = agenzie.sort_values('N° Appartamenti', ascending=False)
         
         # Formatta per display
@@ -311,7 +304,7 @@ with tab2:
         agenzie_display['Prezzo/mq Medio'] = agenzie_display['Prezzo/mq Medio'].apply(lambda x: f"€{x:,.0f}/m²".replace(',', '.'))
         
         # Riordina colonne
-        agenzie_display = agenzie_display[['Agenzia', 'N° Progetti', 'N° Appartamenti', 'Prezzo Medio', 'MQ Medio', 'Prezzo/mq Medio']]
+        agenzie_display = agenzie_display[['Agenzia', 'N° Appartamenti', 'Prezzo Medio', 'MQ Medio', 'Prezzo/mq Medio']]
         
         st.dataframe(agenzie_display, width="stretch", hide_index=True)
         
@@ -453,17 +446,20 @@ with tab4:
         n_app = stats_immobiliare['n_appartamenti']
         n_progetti = stats_immobiliare['n_progetti']
         
-        col1, col2, col3 = st.columns(3)
+        col1, col2 = st.columns(2)
         
         with col1:
             st.metric("Appartamenti in Vendita", n_app)
         
         with col2:
-            st.metric("Progetti Attivi", n_progetti)
-        
-        with col3:
-            app_per_progetto = n_app / n_progetti if n_progetti > 0 else 0
-            st.metric("App/Progetto (media)", f"{app_per_progetto:.1f}")
+            # Media appartamenti per agenzia top 5
+            if stats_immobiliare.get('dataframe') is not None:
+                df = stats_immobiliare['dataframe']
+                agenzie_stats = df.groupby('agenzia').size()
+                top5_media = agenzie_stats.nlargest(5).mean()
+                st.metric("App/Agenzia Top 5 (media)", f"{top5_media:.1f}")
+            else:
+                st.metric("Agenzie Attive", "N/D")
         
         # Valutazione saturazione
         st.markdown("---")

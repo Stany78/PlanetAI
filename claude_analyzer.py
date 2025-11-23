@@ -132,8 +132,7 @@ Devi analizzare i dati di una zona immobiliare e fornire un'analisi chiara e pro
     
     if stats_immobiliare and stats_immobiliare.get('n_appartamenti', 0) > 0:
         prompt += f"""
-- Numero appartamenti analizzati: {stats_immobiliare.get('n_appartamenti', 'N/D')}
-- Progetti immobiliari: {stats_immobiliare.get('n_progetti', 'N/D')}
+- Numero appartamenti in vendita (nuove costruzioni): {stats_immobiliare.get('n_appartamenti', 'N/D')}
 """
         
         # Prezzi totali (se disponibili)
@@ -179,7 +178,6 @@ Devi analizzare i dati di una zona immobiliare e fornire un'analisi chiara e pro
         
         # METRICHE DEVELOPER
         n_app = stats_immobiliare.get('n_appartamenti', 0)
-        n_progetti = stats_immobiliare.get('n_progetti', 0)
         
         prompt += "\n---\n\n**METRICHE DEVELOPER:**\n"
         
@@ -193,7 +191,7 @@ Devi analizzare i dati di una zona immobiliare e fornire un'analisi chiara e pro
         
         prompt += f"""
 - Saturazione mercato: {saturazione}
-- Appartamenti/Progetto: {n_app / n_progetti:.1f} (media)
+- Totale appartamenti in vendita: {n_app}
 """
         
         # Concentrazione agenzie (se disponibile dataframe)
