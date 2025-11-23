@@ -1,16 +1,36 @@
+# Requirements per Planet AI - Analisi Immobiliare
+# Streamlit Cloud compatible
+
+# Core
 streamlit>=1.42.0
-pandas
-requests
-numpy
+pandas>=2.0.0
+numpy>=1.24.0
+requests>=2.31.0
 python-dateutil
+
+# Visualizzazione
+plotly>=5.17.0
 altair
-protobuf
-beautifulsoup4
-geopy
-python-docx
-matplotlib
+matplotlib>=3.7.0
 Pillow
+
+# Data processing
+protobuf
+
+# Web scraping
+beautifulsoup4>=4.12.0
+
+# Geocoding
+geopy>=2.4.0
+
+# Geospatial (per OMI KML)
 fastkml==0.12
 pyproj
 lxml
 pygeoif
+
+# Report generation
+python-docx>=1.1.0
+
+# AI Analysis (opzionale)
+anthropic>=0.39.0
