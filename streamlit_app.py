@@ -222,7 +222,7 @@ tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
     "📊 Dati OMI", 
     "🏠 Immobiliare.it", 
     "📈 Confronto", 
-    "💼 Analisi Developer",  # ← NUOVO!
+    "💼 Analisi Developer",
     "🤖 Analisi AI", 
     "📄 Report"
 ])
@@ -430,7 +430,7 @@ with tab3:
             height=400
         )
         
-        st.plotly_chart(fig, width="stretch")
+        st.plotly_chart(fig, use_container_width=True)
         
     else:
         st.warning("⚠️ Dati insufficienti per il confronto.")
@@ -443,134 +443,133 @@ with tab4:
     
     if not zona_omi or not stats_immobiliare or stats_immobiliare.get('n_appartamenti', 0) == 0:
         st.warning("⚠️ Esegui prima un'analisi completa per vedere questa sezione.")
-        st.stop()
-    
-    # ========================================
-    # 1. SATURAZIONE MERCATO
-    # ========================================
-    st.subheader("🎯 1. Saturazione Mercato")
-    
-    n_app = stats_immobiliare['n_appartamenti']
-    n_progetti = stats_immobiliare['n_progetti']
-    
-    col1, col2, col3 = st.columns(3)
-    
-    with col1:
-        st.metric("Appartamenti in Vendita", n_app)
-    
-    with col2:
-        st.metric("Progetti Attivi", n_progetti)
-    
-    with col3:
-        app_per_progetto = n_app / n_progetti if n_progetti > 0 else 0
-        st.metric("App/Progetto (media)", f"{app_per_progetto:.1f}")
-    
-    # Valutazione saturazione
-    st.markdown("---")
-    st.markdown("**Valutazione Saturazione:**")
-    
-    if n_app < 10:
-        st.success("""Mercato LIBERO - Poca concorrenza
+    else:
+        # ========================================
+        # 1. SATURAZIONE MERCATO
+        # ========================================
+        st.subheader("🎯 1. Saturazione Mercato")
         
+        n_app = stats_immobiliare['n_appartamenti']
+        n_progetti = stats_immobiliare['n_progetti']
+        
+        col1, col2, col3 = st.columns(3)
+        
+        with col1:
+            st.metric("Appartamenti in Vendita", n_app)
+        
+        with col2:
+            st.metric("Progetti Attivi", n_progetti)
+        
+        with col3:
+            app_per_progetto = n_app / n_progetti if n_progetti > 0 else 0
+            st.metric("App/Progetto (media)", f"{app_per_progetto:.1f}")
+        
+        # Valutazione saturazione
+        st.markdown("---")
+        st.markdown("**Valutazione Saturazione:**")
+        
+        if n_app < 10:
+            st.success("""Mercato LIBERO - Poca concorrenza
+            
 - Pochi appartamenti in vendita
 - Buona opportunità di ingresso
 - Minor rischio di invenduto
-        """)
-    elif n_app < 30:
-        st.info("""Mercato MEDIO - Concorrenza normale
-        
+            """)
+        elif n_app < 30:
+            st.info("""Mercato MEDIO - Concorrenza normale
+            
 - Livello di offerta standard
 - Necessaria differenziazione
 - Attenzione al pricing
-        """)
-    else:
-        st.warning("""Mercato SATURO - Alta concorrenza
-        
+            """)
+        else:
+            st.warning("""Mercato SATURO - Alta concorrenza
+            
 - Molti appartamenti invenduti
 - Rischio absorption rate basso
 - Necessaria forte differenziazione o prezzi competitivi
-        """)
-    
-    st.markdown("---")
-    
-    # ========================================
-    # 2. PRICING BENCHMARK
-    # ========================================
-    st.subheader("💰 2. Pricing Benchmark")
-    
-    omi_med = zona_omi['val_med_mq']
-    mercato_min = stats_immobiliare['prezzo_mq']['min']
-    mercato_med = stats_immobiliare['prezzo_mq']['mediano']
-    mercato_max = stats_immobiliare['prezzo_mq']['max']
-    
-    # Tabella comparativa
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        st.markdown("**📊 Valori OMI (Rogiti Reali)**")
-        st.metric("Valore Mediano OMI", f"€{omi_med:,.0f}/m²".replace(',', '.'))
-        st.caption("Baseline ufficiale Agenzia Entrate")
-    
-    with col2:
-        st.markdown("**🏠 Mercato Nuove Costruzioni**")
-        st.metric("Range Prezzi", 
-                 f"€{mercato_min:,.0f} - €{mercato_max:,.0f}/m²".replace(',', '.'))
-        st.metric("Prezzo Mediano", f"€{mercato_med:,.0f}/m²".replace(',', '.'))
-    
-    st.markdown("---")
-    
-    # Target pricing consigliato
-    st.markdown("**🎯 Target Pricing Consigliato**")
-    
-    gap_percentuale = ((mercato_med - omi_med) / omi_med) * 100
-    
-    # Calcola sweet spot
-    target_min = mercato_med * 0.95  # -5% dal mediano
-    target_max = mercato_med * 1.05  # +5% dal mediano
-    
-    col1, col2, col3 = st.columns(3)
-    
-    with col1:
-        st.metric("Entry Level", f"€{target_min:,.0f}/m²".replace(',', '.'))
-        st.caption("Per vendita veloce")
-    
-    with col2:
-        st.metric("Sweet Spot", f"€{mercato_med:,.0f}/m²".replace(',', '.'))
-        st.caption("Consigliato")
-    
-    with col3:
-        st.metric("Premium", f"€{target_max:,.0f}/m²".replace(',', '.'))
-        st.caption("Se alta qualità")
-    
-    st.markdown("---")
-    
-    # ========================================
-    # 4. GAP ANALYSIS STRATEGICO
-    # ========================================
-    st.subheader("📊 4. Gap Analysis Strategico")
-    
-    col1, col2, col3 = st.columns(3)
-    
-    with col1:
-        st.metric("OMI Baseline", f"€{omi_med:,.0f}/m²".replace(',', '.'))
-    
-    with col2:
-        st.metric("Mercato Mediano", f"€{mercato_med:,.0f}/m²".replace(',', '.'))
-    
-    with col3:
-        gap_assoluto = mercato_med - omi_med
-        st.metric("Gap", 
-                 f"{gap_percentuale:+.1f}%".replace('.', ','),
-                 delta=f"€{gap_assoluto:,.0f}/m²".replace(',', '.'))
-    
-    st.markdown("---")
-    
-    # Interpretazione strategica
-    st.markdown("**🎯 Interpretazione Strategica:**")
-    
-    if gap_percentuale > 50:
-        st.error("""GAP MOLTO ALTO (+50% vs OMI)
+            """)
         
+        st.markdown("---")
+        
+        # ========================================
+        # 2. PRICING BENCHMARK
+        # ========================================
+        st.subheader("💰 2. Pricing Benchmark")
+        
+        omi_med = zona_omi['val_med_mq']
+        mercato_min = stats_immobiliare['prezzo_mq']['min']
+        mercato_med = stats_immobiliare['prezzo_mq']['mediano']
+        mercato_max = stats_immobiliare['prezzo_mq']['max']
+        
+        # Tabella comparativa
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.markdown("**📊 Valori OMI (Rogiti Reali)**")
+            st.metric("Valore Mediano OMI", f"€{omi_med:,.0f}/m²".replace(',', '.'))
+            st.caption("Baseline ufficiale Agenzia Entrate")
+        
+        with col2:
+            st.markdown("**🏠 Mercato Nuove Costruzioni**")
+            st.metric("Range Prezzi", 
+                     f"€{mercato_min:,.0f} - €{mercato_max:,.0f}/m²".replace(',', '.'))
+            st.metric("Prezzo Mediano", f"€{mercato_med:,.0f}/m²".replace(',', '.'))
+        
+        st.markdown("---")
+        
+        # Target pricing consigliato
+        st.markdown("**🎯 Target Pricing Consigliato**")
+        
+        gap_percentuale = ((mercato_med - omi_med) / omi_med) * 100
+        
+        # Calcola sweet spot
+        target_min = mercato_med * 0.95  # -5% dal mediano
+        target_max = mercato_med * 1.05  # +5% dal mediano
+        
+        col1, col2, col3 = st.columns(3)
+        
+        with col1:
+            st.metric("Entry Level", f"€{target_min:,.0f}/m²".replace(',', '.'))
+            st.caption("Per vendita veloce")
+        
+        with col2:
+            st.metric("Sweet Spot", f"€{mercato_med:,.0f}/m²".replace(',', '.'))
+            st.caption("Consigliato")
+        
+        with col3:
+            st.metric("Premium", f"€{target_max:,.0f}/m²".replace(',', '.'))
+            st.caption("Se alta qualità")
+        
+        st.markdown("---")
+        
+        # ========================================
+        # 4. GAP ANALYSIS STRATEGICO
+        # ========================================
+        st.subheader("📊 4. Gap Analysis Strategico")
+        
+        col1, col2, col3 = st.columns(3)
+        
+        with col1:
+            st.metric("OMI Baseline", f"€{omi_med:,.0f}/m²".replace(',', '.'))
+        
+        with col2:
+            st.metric("Mercato Mediano", f"€{mercato_med:,.0f}/m²".replace(',', '.'))
+        
+        with col3:
+            gap_assoluto = mercato_med - omi_med
+            st.metric("Gap", 
+                     f"{gap_percentuale:+.1f}%".replace('.', ','),
+                     delta=f"€{gap_assoluto:,.0f}/m²".replace(',', '.'))
+        
+        st.markdown("---")
+        
+        # Interpretazione strategica
+        st.markdown("**🎯 Interpretazione Strategica:**")
+        
+        if gap_percentuale > 50:
+            st.error("""GAP MOLTO ALTO (+50% vs OMI)
+            
 **Significato:**
 - Mercato con forte premium su nuove costruzioni
 - Possibile sopravvalutazione
@@ -580,10 +579,10 @@ with tab4:
 - Verificare qualità effettiva immobili
 - Rischio di correzione prezzi
 - Considera pricing conservativo
-        """)
-    elif gap_percentuale > 30:
-        st.warning("""GAP SIGNIFICATIVO (+30-50% vs OMI)
-        
+            """)
+        elif gap_percentuale > 30:
+            st.warning("""GAP SIGNIFICATIVO (+30-50% vs OMI)
+            
 **Significato:**
 - Premium pricing per nuove costruzioni
 - Mercato accetta sovrapprezzo elevato
@@ -593,10 +592,10 @@ with tab4:
 - Giustifica premium con alta qualità
 - Finiture e servizi eccellenti
 - Marketing forte
-        """)
-    elif gap_percentuale > 15:
-        st.success("""GAP NORMALE (+15-30% vs OMI)
-        
+            """)
+        elif gap_percentuale > 15:
+            st.success("""GAP NORMALE (+15-30% vs OMI)
+            
 **Significato:**
 - Premium standard nuove costruzioni
 - Mercato equilibrato
@@ -606,10 +605,10 @@ with tab4:
 - Sweet spot ideale per sviluppo
 - Buon bilanciamento prezzo/qualità
 - Vendibilità ottimale
-        """)
-    else:
-        st.info("""GAP BASSO (<15% vs OMI)
-        
+            """)
+        else:
+            st.info("""GAP BASSO (<15% vs OMI)
+            
 **Significato:**
 - Prezzi allineati a valori rogiti
 - Mercato competitivo
@@ -619,58 +618,60 @@ with tab4:
 - Ottimizza costi costruzione
 - Efficienza operativa fondamentale
 - Volume vendite importante
-        """)
-    
-    st.markdown("---")
-    
-    # ========================================
-    # 5. ANALISI AGENZIE
-    # ========================================
-    st.subheader("🏢 5. Analisi Agenzie/Operatori")
-    
-    if stats_immobiliare.get('agenzie'):
-        st.markdown("**Principali operatori nella zona:**")
+            """)
         
-        # Tabella agenzie
-        agenzie_list = stats_immobiliare['agenzie'][:10]
+        st.markdown("---")
         
-        if agenzie_list:
-            agenzie_data = []
-            for ag in agenzie_list:
-                percentuale = (ag['count'] / n_app * 100)
-                agenzie_data.append({
-                    'Agenzia': ag['agenzia'],
-                    'N° Appartamenti': ag['count'],
-                    '% Mercato': f"{percentuale:.1f}%"
-                })
+        # ========================================
+        # 5. ANALISI AGENZIE - VERSIONE CORRETTA
+        # ========================================
+        st.subheader("🏢 5. Analisi Agenzie/Operatori")
+        
+        if stats_immobiliare.get('dataframe') is not None:
+            st.markdown("**Principali operatori nella zona:**")
             
-            agenzie_df = pd.DataFrame(agenzie_data)
+            # Calcola agenzie dal dataframe direttamente
+            df = stats_immobiliare['dataframe']
+            agenzie_stats = df.groupby('agenzia').size().reset_index(name='count')
+            agenzie_stats = agenzie_stats.sort_values('count', ascending=False).head(10)
             
-            st.dataframe(
-                agenzie_df,
-                use_container_width=True,
-                hide_index=True
-            )
-            
-            # Analisi concentrazione
-            top3_count = sum([ag['count'] for ag in agenzie_list[:3]])
-            top3_share = (top3_count / n_app * 100)
-            
-            st.markdown("---")
-            st.markdown("**📊 Concentrazione Mercato:**")
-            
-            col1, col2 = st.columns(2)
-            
-            with col1:
-                st.metric("Top 3 Agenzie", f"{top3_share:.1f}%")
-            
-            with col2:
-                if top3_share > 60:
-                    st.warning("Mercato concentrato - Pochi operatori dominanti")
-                elif top3_share > 40:
-                    st.info("Mercato moderato - Mix operatori grandi/piccoli")
-                else:
-                    st.success("Mercato frammentato - Molti piccoli operatori")
+            if len(agenzie_stats) > 0:
+                agenzie_data = []
+                for _, row in agenzie_stats.iterrows():
+                    percentuale = (row['count'] / n_app * 100)
+                    agenzie_data.append({
+                        'Agenzia': row['agenzia'],
+                        'N° Appartamenti': int(row['count']),
+                        '% Mercato': f"{percentuale:.1f}%"
+                    })
+                
+                agenzie_df = pd.DataFrame(agenzie_data)
+                
+                st.dataframe(
+                    agenzie_df,
+                    use_container_width=True,
+                    hide_index=True
+                )
+                
+                # Analisi concentrazione
+                top3_count = agenzie_stats.head(3)['count'].sum()
+                top3_share = (top3_count / n_app * 100)
+                
+                st.markdown("---")
+                st.markdown("**📊 Concentrazione Mercato:**")
+                
+                col1, col2 = st.columns(2)
+                
+                with col1:
+                    st.metric("Top 3 Agenzie", f"{top3_share:.1f}%")
+                
+                with col2:
+                    if top3_share > 60:
+                        st.warning("Mercato concentrato - Pochi operatori dominanti")
+                    elif top3_share > 40:
+                        st.info("Mercato moderato - Mix operatori grandi/piccoli")
+                    else:
+                        st.success("Mercato frammentato - Molti piccoli operatori")
 
 
 # ----------------------------------------
@@ -781,7 +782,7 @@ ANALISI DETTAGLIATA
                 file_name=f"analisi_ai_{data['comune']}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt",
                 mime="text/plain",
                 key="download_ai",
-                width="stretch"
+                use_container_width=True
             )
             
             # Raccomandazioni
@@ -830,7 +831,7 @@ with tab6:
                 file_name=report_filename,
                 mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
                 key="download_report",
-                width="stretch"
+                use_container_width=True
             )
         with col2:
             st.caption(f"📄 {report_filename}")
@@ -858,7 +859,7 @@ with tab6:
                 file_name=f"appartamenti_{comune_report}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
                 mime="text/csv",
                 key="download_csv",
-                width="stretch"
+                use_container_width=True
             )
         with col2:
             st.caption(f"📊 {len(appartamenti_report)} record")
