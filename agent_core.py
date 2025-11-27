@@ -140,6 +140,22 @@ def geocode_indirizzo(comune: str, indirizzo: str) -> tuple[float, float, dict]:
             
     except Exception as e:
         print(f"[GEO][ERROR] Geocoding errore: {e}")
+        
+        # Se errore di connessione (Streamlit Cloud blocca Nominatim), prova solo il comune
+        if "Connection refused" in str(e) or "Max retries" in str(e):
+            try:
+                # Riprova con solo il comune
+                loc_comune = _geolocator.geocode(f"{comune}, Italia", timeout=10)
+                if loc_comune:
+                    return (loc_comune.latitude, loc_comune.longitude, {
+                        'success': False,
+                        'type': 'city',
+                        'display_name': loc_comune.address,
+                        'message': f'⚠️ Nominatim non disponibile. Usando coordinate del centro di {comune}.'
+                    })
+            except:
+                pass
+        
         return (0, 0, {
             'success': False,
             'type': 'failed',
