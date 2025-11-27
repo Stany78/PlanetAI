@@ -25,8 +25,14 @@ except ImportError:
     CLAUDE_AVAILABLE = False
     print("⚠️ Modulo claude_analyzer non disponibile - analisi AI disabilitata")
 from config import REPORTS_DIR
-from map_generator import crea_mappa_interattiva, get_mappa_statistiche
-from geocoder_appartamenti import geocoda_appartamenti
+# Import opzionali per mappe e geocoding
+try:
+    from map_generator import crea_mappa_interattiva, get_mappa_statistiche
+    from geocoder_appartamenti import geocoda_appartamenti
+    MAP_AVAILABLE = True
+except ImportError as e:
+    MAP_AVAILABLE = False
+    print(f"⚠️ Moduli mappa non disponibili: {e}")
 
 # Configurazione pagina
 st.set_page_config(
@@ -157,7 +163,12 @@ progress_bar.progress(60)
 appartamenti = cerca_appartamenti(lat, lon, raggio_km, max_pagine=5)
 
 # 3.5 GEOCODING APPARTAMENTI (aggiungi coordinate GPS)
-if appartamenti and len(appartamenti) > 0:
+if MAP_AVAILABLE and appartamenti and len(appartamenti) > 0:
+    # DEBUG: Vediamo quali campi ci sono
+    if len(appartamenti) > 0:
+        print(f"[DEBUG] Primo appartamento keys: {list(appartamenti[0].keys())}")
+        print(f"[DEBUG] Primo appartamento: {appartamenti[0]}")
+    
     status_text.text("📍 Geocoding appartamenti...")
     progress_bar.progress(70)
     appartamenti = geocoda_appartamenti(appartamenti, comune, delay=0.5)

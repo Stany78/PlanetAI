@@ -59,14 +59,26 @@ def geocoda_appartamenti(appartamenti: List[Dict], comune: str, delay: float = 1
     
     print(f"\n[GEOCODER] Geocoding {len(appartamenti)} appartamenti...")
     
+    # DEBUG: Mostra quali campi sono disponibili
+    if len(appartamenti) > 0:
+        print(f"[GEOCODER][DEBUG] Campi disponibili nel primo appartamento: {list(appartamenti[0].keys())}")
+    
     geocodati = 0
     falliti = 0
     
     for i, app in enumerate(appartamenti, 1):
-        # Prova a usare l'indirizzo se disponibile
-        indirizzo = app.get('indirizzo', None) or app.get('via', None) or app.get('address', None)
+        # Prova TUTTI i possibili nomi campo per l'indirizzo
+        indirizzo = (
+            app.get('indirizzo') or 
+            app.get('via') or 
+            app.get('address') or 
+            app.get('location') or
+            app.get('localita') or
+            app.get('zona') or
+            app.get('title')  # A volte il titolo contiene l'indirizzo
+        )
         
-        if indirizzo:
+        if indirizzo and indirizzo != 'N/D':
             lat, lon = geocoda_appartamento(indirizzo, comune)
             
             if lat and lon:
