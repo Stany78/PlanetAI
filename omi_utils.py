@@ -303,8 +303,11 @@ def _get_valori_for_zona(
     
     # FILTRO TIPOLOGIA: Solo abitazioni civili e signorili
     # Questo filtro viene applicato SEMPRE come base (se colonna esiste)
-    if "descr_tipologia" in df.columns:
-        mask_tipologia = df["descr_tipologia"].str.upper().isin(["ABITAZIONI CIVILI", "ABITAZIONI SIGNORILI"])
+    if "Descr_Tipologia" in df.columns:
+        # DEBUG: stampa valori unici
+        if DEBUG_MODE:
+            print(f"[OMI][DEBUG] Valori unici Descr_Tipologia: {df['Descr_Tipologia'].unique().tolist()}")
+        mask_tipologia = df["Descr_Tipologia"].str.upper().isin(["ABITAZIONI CIVILI", "ABITAZIONI SIGNORILI"])
     else:
         # Colonna non esiste - nessun filtro (per compatibilità)
         mask_tipologia = pd.Series([True] * len(df), index=df.index)
