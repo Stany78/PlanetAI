@@ -482,8 +482,8 @@ with tab3b:
             
             # Mostra mappa con streamlit-folium
             try:
-                from streamlit_folium import folium_static
-                folium_static(mappa, width=1200, height=600)
+                from streamlit_folium import st_folium
+                st_folium(mappa, width=1200, height=600, returned_objects=[])
             except ImportError:
                 # Fallback se streamlit-folium non installato
                 st.warning("⚠️ Modulo streamlit-folium non disponibile")
