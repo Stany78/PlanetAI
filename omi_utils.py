@@ -300,9 +300,13 @@ def _get_valori_for_zona(
 
     comune_up = _norm(comune_kml)
     prov_up = _norm(provincia_kml)
+    
+    # FILTRO TIPOLOGIA: Solo abitazioni civili e signorili
+    # Questo filtro viene applicato SEMPRE come base
+    mask_tipologia = df["Tipologia"].str.upper().isin(["ABITAZIONI CIVILI", "ABITAZIONI SIGNORILI"])
 
-    # 1) Zona + Comune + Provincia
-    mask = df["Zona"].str.upper().eq(zona_up)
+    # 1) Zona + Comune + Provincia + Tipologia
+    mask = mask_tipologia & df["Zona"].str.upper().eq(zona_up)
     if comune_up:
         mask = mask & df["Comune_descrizione"].str.upper().eq(comune_up)
     if prov_up:
@@ -310,23 +314,24 @@ def _get_valori_for_zona(
 
     rows = df.loc[mask]
 
-    # 2) Zona + Provincia (se nulla)
+    # 2) Zona + Provincia + Tipologia (se nulla)
     if rows.empty and prov_up:
-        mask = (df["Zona"].str.upper().eq(zona_up)) & (
+        mask = mask_tipologia & (df["Zona"].str.upper().eq(zona_up)) & (
             df["Prov"].str.upper().eq(prov_up)
         )
         rows = df.loc[mask]
 
-    # 3) Zona + Comune (se ancora nulla)
+    # 3) Zona + Comune + Tipologia (se ancora nulla)
     if rows.empty and comune_up:
-        mask = (df["Zona"].str.upper().eq(zona_up)) & (
+        mask = mask_tipologia & (df["Zona"].str.upper().eq(zona_up)) & (
             df["Comune_descrizione"].str.upper().eq(comune_up)
         )
         rows = df.loc[mask]
 
-    # 4) Solo Zona (fallback)
+    # 4) Solo Zona + Tipologia (fallback)
     if rows.empty:
-        rows = df.loc[df["Zona"].str.upper().eq(zona_up)]
+        mask = mask_tipologia & df["Zona"].str.upper().eq(zona_up)
+        rows = df.loc[mask]
 
     if rows.empty:
         if DEBUG_MODE:
