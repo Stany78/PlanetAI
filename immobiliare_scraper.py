@@ -1,6 +1,6 @@
 """
 Modulo per scraping dati da Immobiliare.it
-Estrae: Prezzo, MQ, Agenzia per nuove costruzioni
+Estrae: Prezzo, MQ, Agenzia, Coordinate GPS per nuove costruzioni
 """
 
 import requests
@@ -19,7 +19,7 @@ def cerca_appartamenti(lat: float, lon: float, raggio_km: float, max_pagine: int
         max_pagine: Numero massimo di pagine da scaricare
     
     Returns:
-        Lista di dict con: progetto_id, prezzo, mq, agenzia
+        Lista di dict con: progetto_id, prezzo, mq, agenzia, latitudine, longitudine
     """
     import math
     
@@ -99,6 +99,11 @@ def cerca_appartamenti(lat: float, lon: float, raggio_km: float, max_pagine: int
                 # ID del progetto (per raggruppare appartamenti dello stesso annuncio)
                 progetto_id = real_estate.get('id', 'N/D')
                 
+                # COORDINATE GPS
+                location = real_estate.get('location', {})
+                latitudine = location.get('latitude')
+                longitudine = location.get('longitude')
+                
                 # Agenzia
                 agenzia = "N/D"
                 advertiser = real_estate.get('advertiser', {})
@@ -132,6 +137,8 @@ def cerca_appartamenti(lat: float, lon: float, raggio_km: float, max_pagine: int
                             'prezzo': prezzo,
                             'mq': mq,
                             'agenzia': agenzia,
+                            'latitudine': latitudine,  # NUOVO
+                            'longitudine': longitudine,  # NUOVO
                         })
             
             # Pausa tra pagine
