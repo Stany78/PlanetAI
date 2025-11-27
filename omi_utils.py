@@ -300,20 +300,13 @@ def _get_valori_for_zona(
 
     comune_up = _norm(comune_kml)
     prov_up = _norm(provincia_kml)
-    
-    # FILTRO TIPOLOGIA: Solo abitazioni civili e signorili
-    # Questo filtro viene applicato SEMPRE come base (se colonna esiste)
-    if "Descr_Tipologia" in df.columns:
-        # DEBUG: stampa valori unici
-        if DEBUG_MODE:
-            print(f"[OMI][DEBUG] Valori unici Descr_Tipologia: {df['Descr_Tipologia'].unique().tolist()}")
-        mask_tipologia = df["Descr_Tipologia"].str.upper().isin(["ABITAZIONI CIVILI", "ABITAZIONI SIGNORILI"])
-    else:
-        # Colonna non esiste - nessun filtro (per compatibilità)
-        mask_tipologia = pd.Series([True] * len(df), index=df.index)
 
-    # 1) Zona + Comune + Provincia + Tipologia
-    mask = mask_tipologia & df["Zona"].str.upper().eq(zona_up)
+    # FILTRO ABITAZIONI: Solo abitazioni civili e signorili
+    if "Descr_Tipologia" in df.columns:
+        df = df[df["Descr_Tipologia"].str.upper().isin(["ABITAZIONI CIVILI", "ABITAZIONI SIGNORILI"])]
+
+    # 1) Zona + Comune + Provincia
+    mask = df["Zona"].str.upper().eq(zona_up)
     if comune_up:
         mask = mask & df["Comune_descrizione"].str.upper().eq(comune_up)
     if prov_up:
@@ -321,24 +314,23 @@ def _get_valori_for_zona(
 
     rows = df.loc[mask]
 
-    # 2) Zona + Provincia + Tipologia (se nulla)
+    # 2) Zona + Provincia (se nulla)
     if rows.empty and prov_up:
-        mask = mask_tipologia & (df["Zona"].str.upper().eq(zona_up)) & (
+        mask = (df["Zona"].str.upper().eq(zona_up)) & (
             df["Prov"].str.upper().eq(prov_up)
         )
         rows = df.loc[mask]
 
-    # 3) Zona + Comune + Tipologia (se ancora nulla)
+    # 3) Zona + Comune (se ancora nulla)
     if rows.empty and comune_up:
-        mask = mask_tipologia & (df["Zona"].str.upper().eq(zona_up)) & (
+        mask = (df["Zona"].str.upper().eq(zona_up)) & (
             df["Comune_descrizione"].str.upper().eq(comune_up)
         )
         rows = df.loc[mask]
 
-    # 4) Solo Zona + Tipologia (fallback)
+    # 4) Solo Zona (fallback)
     if rows.empty:
-        mask = mask_tipologia & df["Zona"].str.upper().eq(zona_up)
-        rows = df.loc[mask]
+        rows = df.loc[df["Zona"].str.upper().eq(zona_up)]
 
     if rows.empty:
         if DEBUG_MODE:
