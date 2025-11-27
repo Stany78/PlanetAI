@@ -470,13 +470,16 @@ with tab3b:
     else:
         try:
             # Crea mappa
+            # Usa il dataframe pulito (senza duplicati) invece della lista originale
+            appartamenti_per_mappa = stats_immobiliare['dataframe'].to_dict('records') if stats_immobiliare else appartamenti
+            
             mappa = crea_mappa_interattiva(
                 lat_centro=lat,
                 lon_centro=lon,
                 via=via,
                 comune=comune,
                 raggio_km=raggio_km,
-                appartamenti=appartamenti,
+                appartamenti=appartamenti_per_mappa,
                 stats_immobiliare=stats_immobiliare
             )
             
