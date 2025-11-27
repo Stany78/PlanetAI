@@ -79,10 +79,14 @@ from omi_utils import (
 _geolocator = Nominatim(user_agent="planet_ai_omi_agent")
 
 
-def geocode_indirizzo(comune: str, indirizzo: str) -> tuple[float, float]:
+def geocode_indirizzo(comune: str, indirizzo: str) -> tuple[float, float, bool]:
     """
     Geocoda 'indirizzo, comune, Italia' usando Nominatim.
-    Se fallisce, usa FALLBACK_COORDINATE.
+    
+    Returns:
+        tuple: (lat, lon, success)
+        - success: True se trovato, False se NON trovato
+        - Se False, lat e lon sono 0
     """
     full_address = f"{indirizzo}, {comune}, Italia"
     if DEBUG_MODE:
@@ -91,12 +95,12 @@ def geocode_indirizzo(comune: str, indirizzo: str) -> tuple[float, float]:
     try:
         loc = _geolocator.geocode(full_address)
         if loc is None:
-            print("[GEO][WARN] Geocoding fallito, uso FALLBACK_COORDINATE.")
-            return FALLBACK_COORDINATE
-        return (loc.latitude, loc.longitude)
+            print("[GEO][WARN] Geocoding fallito.")
+            return (0, 0, False)  # NON trovato
+        return (loc.latitude, loc.longitude, True)  # Trovato!
     except Exception as e:
-        print(f"[GEO][ERROR] Geocoding errore: {e}. Uso FALLBACK_COORDINATE.")
-        return FALLBACK_COORDINATE
+        print(f"[GEO][ERROR] Geocoding errore: {e}")
+        return (0, 0, False)  # NON trovato
 
 
 # ==============================

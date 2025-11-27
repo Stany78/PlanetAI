@@ -105,9 +105,28 @@ status_text = st.empty()
 status_text.text("🗺️ Geocoding indirizzo...")
 progress_bar.progress(20)
 
-lat, lon = geocode_indirizzo(comune, via)
+lat, lon, success = geocode_indirizzo(comune, via)
 
-st.success(f"✅ Coordinate: {lat:.6f}, {lon:.6f}")
+if not success:
+    # Geocoding fallito - BLOCCA
+    progress_bar.progress(0)
+    status_text.text("")
+    
+    st.error(f"❌ Via non trovata: '{via}' a {comune}")
+    
+    st.warning("""
+    **Come risolvere:**
+    - Verifica l'ortografia della via
+    - Prova con il nome completo (es: "Via Prina" invece di "Prina")
+    - Aggiungi il numero civico (es: "Via Prina 10")
+    - Prova con una via principale vicina
+    """)
+    
+    st.info("💡 **Suggerimento**: Cerca la via su Google Maps per verificare il nome esatto")
+    
+    st.stop()  # BLOCCA qui - non procede
+
+st.success(f"✅ Indirizzo trovato! Coordinate: {lat:.6f}, {lon:.6f}")
 
 # 2. DATI OMI
 status_text.text("📊 Ricerca zona OMI...")
