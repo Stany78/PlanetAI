@@ -91,7 +91,15 @@ def crea_mappa_interattiva(
     ).add_to(mappa)
     
     # PIN APPARTAMENTI
+    print(f"[MAP] Totale appartamenti ricevuti: {len(appartamenti) if appartamenti else 0}")
+    
     if appartamenti:
+        # DEBUG: Vediamo il primo appartamento
+        if len(appartamenti) > 0:
+            print(f"[MAP] Primo appartamento keys: {list(appartamenti[0].keys())}")
+            print(f"[MAP] Primo appartamento lat/lon: lat={appartamenti[0].get('latitudine')}, lon={appartamenti[0].get('longitudine')}")
+        
+        appartamenti_con_coord = 0
         for idx, app in enumerate(appartamenti, 1):
             lat = app.get('latitudine')
             lon = app.get('longitudine')
@@ -129,6 +137,7 @@ def crea_mappa_interattiva(
                 tooltip_text = f"#{idx}: €{prezzo:,.0f} - {mq:.0f}m² - {agenzia}"
                 
                 # Aggiungi marker
+                appartamenti_con_coord += 1
                 folium.Marker(
                     location=[lat, lon],
                     popup=folium.Popup(popup_html, max_width=250),
@@ -139,6 +148,8 @@ def crea_mappa_interattiva(
                         prefix='fa'
                     )
                 ).add_to(mappa)
+        
+        print(f"[MAP] Appartamenti con coordinate aggiunti alla mappa: {appartamenti_con_coord}/{len(appartamenti)}")
     
     # LEGENDA
     legend_html = '''
