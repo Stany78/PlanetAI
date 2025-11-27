@@ -85,7 +85,7 @@ def geocode_indirizzo(comune: str, indirizzo: str) -> tuple[float, float, bool]:
     
     Returns:
         tuple: (lat, lon, success)
-        - success: True se trovato, False se NON trovato
+        - success: True se trovato (anche solo il comune)
         - Se False, lat e lon sono 0
     """
     full_address = f"{indirizzo}, {comune}, Italia"
@@ -95,12 +95,16 @@ def geocode_indirizzo(comune: str, indirizzo: str) -> tuple[float, float, bool]:
     try:
         loc = _geolocator.geocode(full_address)
         if loc is None:
-            print("[GEO][WARN] Geocoding fallito.")
+            print("[GEO][WARN] Geocoding fallito completamente.")
             return (0, 0, False)  # NON trovato
-        return (loc.latitude, loc.longitude, True)  # Trovato!
+        
+        # Se trova qualcosa (anche solo il comune), accetta
+        # Nominatim trova sempre almeno il comune se esiste
+        return (loc.latitude, loc.longitude, True)
+        
     except Exception as e:
         print(f"[GEO][ERROR] Geocoding errore: {e}")
-        return (0, 0, False)  # NON trovato
+        return (0, 0, False)  # Errore di connessione
 
 
 # ==============================

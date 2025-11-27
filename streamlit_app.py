@@ -108,25 +108,23 @@ progress_bar.progress(20)
 lat, lon, success = geocode_indirizzo(comune, via)
 
 if not success:
-    # Geocoding fallito - BLOCCA
+    # Geocoding fallito completamente - BLOCCA
     progress_bar.progress(0)
     status_text.text("")
     
-    st.error(f"❌ Via non trovata: '{via}' a {comune}")
+    st.error(f"❌ Impossibile localizzare: '{via}' a {comune}")
     
     st.warning("""
-    **Come risolvere:**
-    - Verifica l'ortografia della via
-    - Prova con il nome completo (es: "Via Prina" invece di "Prina")
-    - Aggiungi il numero civico (es: "Via Prina 10")
-    - Prova con una via principale vicina
+    **Possibili cause:**
+    - Errore di connessione a Nominatim (riprova tra qualche secondo)
+    - Comune o via non esistenti
+    - Verifica l'ortografia
     """)
-    
-    st.info("💡 **Suggerimento**: Cerca la via su Google Maps per verificare il nome esatto")
     
     st.stop()  # BLOCCA qui - non procede
 
-st.success(f"✅ Indirizzo trovato! Coordinate: {lat:.6f}, {lon:.6f}")
+# Trovato qualcosa (via specifica o almeno il comune)
+st.success(f"✅ Coordinate trovate: {lat:.6f}, {lon:.6f}")
 
 # 2. DATI OMI
 status_text.text("📊 Ricerca zona OMI...")
