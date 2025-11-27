@@ -79,73 +79,24 @@ from omi_utils import (
 _geolocator = Nominatim(user_agent="planet_ai_omi_agent")
 
 
-def geocode_indirizzo(comune: str, indirizzo: str) -> tuple[float, float, dict]:
+def geocode_indirizzo(comune: str, indirizzo: str) -> tuple[float, float]:
     """
     Geocoda 'indirizzo, comune, Italia' usando Nominatim.
-    
-    Returns:
-        tuple: (lat, lon, info_dict)
-        info_dict contiene:
-        - 'success': bool - True se trovato indirizzo specifico
-        - 'type': str - Tipo risultato ('street', 'city', 'failed')
-        - 'display_name': str - Nome completo trovato
-        - 'message': str - Messaggio per l'utente
+    Se fallisce, usa FALLBACK_COORDINATE.
     """
     full_address = f"{indirizzo}, {comune}, Italia"
     if DEBUG_MODE:
         print(f"[GEO] Geocoding: {full_address}")
 
     try:
-        loc = _geolocator.geocode(full_address, timeout=10)
-        
+        loc = _geolocator.geocode(full_address)
         if loc is None:
-            print("[GEO][WARN] Geocoding fallito completamente")
-            return (0, 0, {
-                'success': False,
-                'type': 'failed',
-                'display_name': '',
-                'message': f'❌ Indirizzo non trovato: "{indirizzo}, {comune}"'
-            })
-        
-        # Verifica il tipo di risultato
-        address_type = loc.raw.get('type', '').lower()
-        address_class = loc.raw.get('class', '').lower()
-        
-        # Controlla se ha trovato una via specifica o solo il comune
-        is_street = address_type in ['residential', 'road', 'pedestrian', 'footway', 'path', 'living_street', 'unclassified']
-        is_specific = 'road' in address_class or 'highway' in address_class or is_street
-        
-        # Verifica se il display_name contiene la via richiesta
-        display_lower = loc.address.lower()
-        via_lower = indirizzo.lower().replace('via ', '').replace('viale ', '').replace('piazza ', '')
-        
-        has_street_in_result = via_lower in display_lower
-        
-        if has_street_in_result and (is_specific or is_street):
-            # Trovato indirizzo specifico
-            return (loc.latitude, loc.longitude, {
-                'success': True,
-                'type': 'street',
-                'display_name': loc.address,
-                'message': f'✅ Indirizzo trovato: {loc.address}'
-            })
-        else:
-            # Trovato solo il comune o zona generica
-            return (0, 0, {
-                'success': False,
-                'type': 'city',
-                'display_name': loc.address,
-                'message': f'⚠️ Via non trovata. Trovato solo: {loc.address}\n💡 Prova con un indirizzo più specifico (es: "Via Anzani 10")'
-            })
-            
+            print("[GEO][WARN] Geocoding fallito, uso FALLBACK_COORDINATE.")
+            return FALLBACK_COORDINATE
+        return (loc.latitude, loc.longitude)
     except Exception as e:
-        print(f"[GEO][ERROR] Geocoding errore: {e}")
-        return (0, 0, {
-            'success': False,
-            'type': 'failed',
-            'display_name': '',
-            'message': f'❌ Errore durante la ricerca: {str(e)}'
-        })
+        print(f"[GEO][ERROR] Geocoding errore: {e}. Uso FALLBACK_COORDINATE.")
+        return FALLBACK_COORDINATE
 
 
 # ==============================
