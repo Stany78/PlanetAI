@@ -25,6 +25,7 @@ except ImportError:
     CLAUDE_AVAILABLE = False
     print("⚠️ Modulo claude_analyzer non disponibile - analisi AI disabilitata")
 from config import REPORTS_DIR
+from map_generator import crea_mappa_interattiva, get_mappa_statistiche
 
 # Configurazione pagina
 st.set_page_config(
@@ -200,6 +201,7 @@ try:
         raggio_km=raggio_km,
         zona_omi=zona_omi,
         stats_immobiliare=stats_immobiliare,
+        appartamenti=appartamenti,
         analisi_ai=risultato_ai,
         output_dir=REPORTS_DIR
     )
@@ -239,10 +241,11 @@ st.markdown("---")
 # ========================================
 
 # TAB per organizzare output
-tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
+tab1, tab2, tab3, tab3b, tab4, tab5, tab6 = st.tabs([
     "📊 Dati OMI", 
     "🏠 Immobiliare.it", 
-    "📈 Confronto", 
+    "📈 Confronto",
+    "🗺️ Mappa",
     "💼 Analisi Developer",
     "🤖 Analisi AI", 
     "📄 Report"
@@ -448,6 +451,55 @@ with tab3:
         
     else:
         st.warning("⚠️ Dati insufficienti per il confronto.")
+
+
+# ----------------------------------------
+# TAB 3B: MAPPA
+# ----------------------------------------
+with tab3b:
+    st.header("🗺️ Mappa Interattiva Appartamenti")
+    
+    if not appartamenti or len(appartamenti) == 0:
+        st.warning("⚠️ Nessun appartamento da visualizzare sulla mappa.")
+    else:
+        try:
+            # Crea mappa
+            mappa = crea_mappa_interattiva(
+                lat_centro=lat,
+                lon_centro=lon,
+                via=via,
+                comune=comune,
+                raggio_km=raggio_km,
+                appartamenti=appartamenti,
+                stats_immobiliare=stats_immobiliare
+            )
+            
+            # Mostra mappa con streamlit-folium
+            try:
+                from streamlit_folium import folium_static
+                folium_static(mappa, width=1200, height=600)
+            except ImportError:
+                # Fallback se streamlit-folium non installato
+                st.warning("⚠️ Modulo streamlit-folium non disponibile")
+                st.info("La mappa è stata generata ma non può essere visualizzata. Sarà inclusa nel report Word.")
+            
+            # Statistiche mappa
+            st.markdown("---")
+            st.subheader("📊 Statistiche Geografiche")
+            
+            map_stats = get_mappa_statistiche(appartamenti)
+            
+            col1, col2, col3 = st.columns(3)
+            col1.metric("Totale Appartamenti", map_stats['totale'])
+            col2.metric("Con Coordinate", map_stats['con_coordinate'])
+            col3.metric("Senza Coordinate", map_stats['senza_coordinate'])
+            
+            if map_stats['con_coordinate'] > 0:
+                st.caption(f"Distribuzione geografica: lat {map_stats['lat_min']:.4f} - {map_stats['lat_max']:.4f}, lon {map_stats['lon_min']:.4f} - {map_stats['lon_max']:.4f}")
+            
+        except Exception as e:
+            st.error(f"❌ Errore nella generazione della mappa: {str(e)}")
+            st.info("La mappa potrebbe essere inclusa nel report Word se la generazione riesce.")
 
 # ----------------------------------------
 # TAB 4: ANALISI DEVELOPER

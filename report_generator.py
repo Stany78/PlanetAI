@@ -13,6 +13,7 @@ import pandas as pd
 from docx import Document
 from docx.shared import Pt, RGBColor, Inches
 from docx.enum.text import WD_ALIGN_PARAGRAPH
+from map_generator import crea_mappa_interattiva
 
 
 def genera_report_combinato(
@@ -23,6 +24,7 @@ def genera_report_combinato(
     raggio_km: float,
     zona_omi: Optional[Dict],
     stats_immobiliare: Optional[Dict],
+    appartamenti: Optional[list] = None,
     analisi_ai: Optional[Dict] = None,
     output_dir: str = "reports"
 ) -> str:
@@ -37,6 +39,7 @@ def genera_report_combinato(
         raggio_km: Raggio ricerca
         zona_omi: Dict con dati OMI (da omi_utils.OMIQuotazione)
         stats_immobiliare: Dict con statistiche Immobiliare.it
+        appartamenti: Lista appartamenti (per mappa)
         output_dir: Directory output
     
     Returns:
@@ -477,6 +480,61 @@ def genera_report_combinato(
         doc.add_paragraph()
     
         # ========================================
+    # ========================================
+    # SEZIONE MAPPA INTERATTIVA
+    # ========================================
+    if appartamenti and len(appartamenti) > 0:
+        doc.add_page_break()
+        doc.add_heading('🗺️ Mappa Appartamenti', 1)
+        
+        try:
+            # Crea mappa
+            mappa = crea_mappa_interattiva(
+                lat_centro=lat,
+                lon_centro=lon,
+                via=via,
+                comune=comune,
+                raggio_km=raggio_km,
+                appartamenti=appartamenti,
+                stats_immobiliare=stats_immobiliare
+            )
+            
+            # Salva mappa come HTML
+            import os
+            mappa_filename = f"mappa_{comune}_{now.strftime('%Y%m%d_%H%M%S')}.html"
+            mappa_path = os.path.join(output_dir, mappa_filename)
+            mappa.save(mappa_path)
+            
+            doc.add_paragraph(f'La mappa interattiva è stata salvata in: {mappa_filename}')
+            doc.add_paragraph('Apri il file HTML per visualizzare la mappa con tutti gli appartamenti.')
+            doc.add_paragraph()
+            
+            # Legenda
+            doc.add_paragraph('Legenda:', style='Heading 3')
+            doc.add_paragraph('📍 Pin rosso (casa): Centro ricerca', style='List Bullet')
+            doc.add_paragraph('🏗️ Pin verde: Appartamenti economici (<-15% mediano)', style='List Bullet')
+            doc.add_paragraph('🏗️ Pin blu: Appartamenti prezzo medio (±15% mediano)', style='List Bullet')
+            doc.add_paragraph('🏗️ Pin arancione: Appartamenti alto prezzo (+15-35% mediano)', style='List Bullet')
+            doc.add_paragraph('🏗️ Pin rosso: Appartamenti molto alto prezzo (>+35% mediano)', style='List Bullet')
+            doc.add_paragraph()
+            
+            # Info coordinate
+            from map_generator import get_mappa_statistiche
+            map_stats = get_mappa_statistiche(appartamenti)
+            
+            doc.add_paragraph(f"Appartamenti visualizzati sulla mappa: {map_stats['con_coordinate']} su {map_stats['totale']}")
+            
+            if map_stats['senza_coordinate'] > 0:
+                doc.add_paragraph(f"⚠️ {map_stats['senza_coordinate']} appartamenti non hanno coordinate e non sono visualizzati sulla mappa.")
+            
+            doc.add_paragraph()
+            
+        except Exception as e:
+            doc.add_paragraph(f'⚠️ Impossibile generare la mappa: {str(e)}')
+            print(f"[MAP][ERROR] Errore generazione mappa per report: {e}")
+        
+        doc.add_paragraph()
+    
     # ========================================
     # FOOTER
     # ========================================
