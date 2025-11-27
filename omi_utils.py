@@ -302,8 +302,12 @@ def _get_valori_for_zona(
     prov_up = _norm(provincia_kml)
     
     # FILTRO TIPOLOGIA: Solo abitazioni civili e signorili
-    # Questo filtro viene applicato SEMPRE come base
-    mask_tipologia = df["Tipologia"].str.upper().isin(["ABITAZIONI CIVILI", "ABITAZIONI SIGNORILI"])
+    # Questo filtro viene applicato SEMPRE come base (se colonna esiste)
+    if "descr_tipologia" in df.columns:
+        mask_tipologia = df["descr_tipologia"].str.upper().isin(["ABITAZIONI CIVILI", "ABITAZIONI SIGNORILI"])
+    else:
+        # Colonna non esiste - nessun filtro (per compatibilità)
+        mask_tipologia = pd.Series([True] * len(df), index=df.index)
 
     # 1) Zona + Comune + Provincia + Tipologia
     mask = mask_tipologia & df["Zona"].str.upper().eq(zona_up)
