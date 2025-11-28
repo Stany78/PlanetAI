@@ -465,9 +465,15 @@ with tab3:
 with tab3b:
     st.header("🗺️ Mappa Interattiva Appartamenti")
     
+    print(f"[TAB_MAPPA] Entrato nel TAB Mappa")
+    print(f"[TAB_MAPPA] appartamenti type: {type(appartamenti)}")
+    print(f"[TAB_MAPPA] appartamenti len: {len(appartamenti) if appartamenti else 0}")
+    
     if not appartamenti or len(appartamenti) == 0:
+        print(f"[TAB_MAPPA] NESSUN appartamento - mostro warning")
         st.warning("⚠️ Nessun appartamento da visualizzare sulla mappa.")
     else:
+        print(f"[TAB_MAPPA] Ho {len(appartamenti)} appartamenti - creo mappa")
         try:
             # Crea mappa
             # Usa il dataframe pulito (senza duplicati) invece della lista originale
