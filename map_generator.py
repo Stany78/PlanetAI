@@ -164,7 +164,7 @@ def crea_mappa_interattiva(
             folium.Marker(
                 location=[lat_edificio, lon_edificio],
                 popup=folium.Popup(popup_html, max_width=300),
-                tooltip=f"{n_apps} appartament{'o' if n_apps == 1 else 'i'} - Prezzo medio €{int(prezzo_medio_edificio):,}",
+                tooltip=f"{n_apps} app. - €{int(prezzo_medio_edificio):,} - [{lat_edificio:.5f}, {lon_edificio:.5f}]",
                 icon=folium.DivIcon(html=f"""
                     <div style="
                         background-color: {bg_color};
