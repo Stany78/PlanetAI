@@ -90,79 +90,116 @@ def crea_mappa_interattiva(
         icon=folium.Icon(color='red', icon='home', prefix='fa')
     ).add_to(mappa)
     
-    # PIN APPARTAMENTI
+    # PIN APPARTAMENTI - RAGGRUPPATI PER EDIFICIO
     print(f"[MAP] Totale appartamenti ricevuti: {len(appartamenti) if appartamenti else 0}")
     
     if appartamenti:
-        # DEBUG: Vediamo il primo appartamento
-        if len(appartamenti) > 0:
-            print(f"[MAP] Primo appartamento keys: {list(appartamenti[0].keys())}")
-            print(f"[MAP] Primo appartamento lat/lon: lat={appartamenti[0].get('latitudine')}, lon={appartamenti[0].get('longitudine')}")
+        from collections import defaultdict
         
-        appartamenti_con_coord = 0
-        for idx, app in enumerate(appartamenti, 1):
+        # Raggruppa appartamenti per coordinate (stesso edificio)
+        edifici = defaultdict(list)
+        for app in appartamenti:
             lat = app.get('latitudine')
             lon = app.get('longitudine')
-            
             if lat and lon:
+                # Arrotonda a 5 decimali (~1 metro) per raggruppare stesso edificio
+                key = (round(lat, 5), round(lon, 5))
+                edifici[key].append(app)
+        
+        print(f"[MAP] {len(edifici)} edifici diversi con {len(appartamenti)} appartamenti totali")
+        
+        # PIN EDIFICI (raggruppati)
+        appartamenti_con_coord = 0
+        for (lat_edificio, lon_edificio), apps_edificio in edifici.items():
+            n_apps = len(apps_edificio)
+            appartamenti_con_coord += n_apps
+            
+            # Calcola prezzo medio dell'edificio
+            prezzi = [a['prezzo'] for a in apps_edificio]
+            prezzo_medio_edificio = sum(prezzi) / len(prezzi)
+            
+            # Calcola prezzo/mq medio per determinare colore
+            if stats_immobiliare:
+                prezzi_mq = [a['prezzo']/a['mq'] for a in apps_edificio if a.get('mq', 0) > 0]
+                prezzo_mq_medio = sum(prezzi_mq) / len(prezzi_mq) if prezzi_mq else 0
+                color = get_color_by_price(prezzo_mq_medio, stats_immobiliare)
+            else:
+                color = 'blue'
+            
+            # HTML popup con LISTA appartamenti
+            popup_html = f"""
+            <div style="width:280px; max-height:400px; overflow-y:auto">
+                <b>🏢 {n_apps} Appartament{'o' if n_apps == 1 else 'i'}</b>
+                <hr style="margin:5px 0">
+            """
+            
+            for idx, app in enumerate(apps_edificio, 1):
+                agenzia = app.get('agenzia', 'N/D')
                 prezzo = app.get('prezzo', 0)
                 mq = app.get('mq', 0)
-                prezzo_mq = app.get('prezzo_mq', 0)
-                agenzia = app.get('agenzia', 'N/D')
-                url = app.get('url', '')
+                prezzo_mq = int(prezzo / mq) if mq > 0 else 0
                 
-                # Determina colore in base al prezzo
-                if stats_immobiliare:
-                    color = get_color_by_price(prezzo_mq, stats_immobiliare)
-                else:
-                    color = 'blue'
-                
-                # Crea popup con info dettagliate
-                popup_html = f"""
-                <div style="width:200px">
-                    <b>🏗️ Appartamento #{idx}</b><br>
-                    <hr style="margin:5px 0">
-                    💰 <b>Prezzo:</b> €{prezzo:,.0f}<br>
-                    📐 <b>Superficie:</b> {mq:.0f} m²<br>
-                    💵 <b>€/m²:</b> €{prezzo_mq:,.0f}/m²<br>
-                    🏢 <b>Agenzia:</b> {agenzia}<br>
+                popup_html += f"""
+                <div style="border-bottom:1px solid #eee; padding:5px 0; font-size:11px">
+                    <b>Unità #{idx}</b><br>
+                    💰 <b>€{prezzo:,}</b><br>
+                    📐 {mq} m² · €{prezzo_mq:,}/m²<br>
+                    🏢 {agenzia[:30]}
+                </div>
                 """
-                
-                if url:
-                    popup_html += f'<br><a href="{url}" target="_blank">🔗 Vedi annuncio</a>'
-                
-                popup_html += "</div>"
-                
-                # Tooltip breve (hover)
-                tooltip_text = f"#{idx}: €{prezzo:,.0f} - {mq:.0f}m² - {agenzia}"
-                
-                # Aggiungi marker
-                appartamenti_con_coord += 1
-                folium.Marker(
-                    location=[lat, lon],
-                    popup=folium.Popup(popup_html, max_width=250),
-                    tooltip=tooltip_text,
-                    icon=folium.Icon(
-                        color=color,
-                        icon='building',
-                        prefix='fa'
-                    )
-                ).add_to(mappa)
+            
+            popup_html += "</div>"
+            
+            # Determina colore CSS per il pin
+            if color == 'green':
+                bg_color = '#22c55e'
+            elif color == 'blue':
+                bg_color = '#3b82f6'
+            elif color == 'orange':
+                bg_color = '#f97316'
+            else:  # red
+                bg_color = '#ef4444'
+            
+            # Icona con NUMERO di appartamenti
+            folium.Marker(
+                location=[lat_edificio, lon_edificio],
+                popup=folium.Popup(popup_html, max_width=300),
+                tooltip=f"{n_apps} appartament{'o' if n_apps == 1 else 'i'} - Prezzo medio €{int(prezzo_medio_edificio):,}",
+                icon=folium.DivIcon(html=f"""
+                    <div style="
+                        background-color: {bg_color};
+                        border: 2px solid white;
+                        border-radius: 50%;
+                        width: 34px;
+                        height: 34px;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        color: white;
+                        font-weight: bold;
+                        font-size: 14px;
+                        box-shadow: 0 2px 5px rgba(0,0,0,0.4);
+                    ">{n_apps}</div>
+                """)
+            ).add_to(mappa)
         
         print(f"[MAP] Appartamenti con coordinate aggiunti alla mappa: {appartamenti_con_coord}/{len(appartamenti)}")
     
     # LEGENDA
     legend_html = '''
     <div style="position: fixed; 
-                bottom: 50px; left: 50px; width: 220px; height: auto; 
+                bottom: 50px; left: 50px; width: 250px; height: auto; 
                 background-color: white; z-index:9999; font-size:14px;
                 border:2px solid grey; border-radius: 5px; padding: 10px">
-        <b>📊 Legenda Prezzi/m²</b><br>
-        <i class="fa fa-map-marker" style="color:green"></i> Economico (&lt;-15% mediano)<br>
-        <i class="fa fa-map-marker" style="color:blue"></i> Medio (±15% mediano)<br>
-        <i class="fa fa-map-marker" style="color:orange"></i> Alto (+15-35% mediano)<br>
-        <i class="fa fa-map-marker" style="color:red"></i> Molto alto (&gt;+35% mediano)<br>
-        <hr style="margin:5px 0">
+        <b>📊 Legenda Mappa</b><br>
+        <hr style="margin:3px 0">
+        <b>Colori (prezzo/m² medio):</b><br>
+        <span style="color:green">●</span> Economico (&lt;-15% mediano)<br>
+        <span style="color:blue">●</span> Medio (±15% mediano)<br>
+        <span style="color:orange">●</span> Alto (+15-35% mediano)<br>
+        <span style="color:red">●</span> Molto alto (&gt;+35% mediano)<br>
+        <hr style="margin:3px 0">
+        <b>Numero sul pin:</b> appartamenti nell'edificio<br>
         <i class="fa fa-home" style="color:red"></i> Centro ricerca<br>
     </div>
     '''
