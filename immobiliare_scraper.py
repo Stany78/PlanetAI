@@ -107,20 +107,20 @@ def cerca_appartamenti(lat: float, lon: float, raggio_km: float, max_pagine: int
                 # ID del progetto (per raggruppare appartamenti dello stesso annuncio)
                 progetto_id = real_estate.get('id', 'N/D')
                 
-                # COORDINATE GPS
-                location = real_estate.get('location', {})
-                
-                # DEBUG: Vediamo cosa c'è in location
-                if idx == 0:  # Solo per il primo appartamento
-                    print(f"[SCRAPER][DEBUG] location keys: {list(location.keys()) if location else 'VUOTO'}")
-                    print(f"[SCRAPER][DEBUG] location: {location}")
-                
-                latitudine = location.get('latitude')
-                longitudine = location.get('longitude')
-                
-                # DEBUG
+                # DEBUG: Stampa TUTTO real_estate per vedere cosa c'è
                 if idx == 0:
-                    print(f"[SCRAPER][DEBUG] lat={latitudine}, lon={longitudine}")
+                    print(f"[SCRAPER][DEBUG] === REAL_ESTATE KEYS ===")
+                    print(f"[SCRAPER][DEBUG] {list(real_estate.keys())}")
+                    
+                    # Cerca campi location/address
+                    for key in real_estate.keys():
+                        if 'location' in key.lower() or 'address' in key.lower() or 'via' in key.lower():
+                            print(f"[SCRAPER][DEBUG] {key}: {real_estate[key]}")
+                
+                # COORDINATE GPS - prova location
+                location = real_estate.get('location', {})
+                latitudine = location.get('latitude') if location else None
+                longitudine = location.get('longitude') if location else None
                 
                 # Agenzia
                 agenzia = "N/D"
