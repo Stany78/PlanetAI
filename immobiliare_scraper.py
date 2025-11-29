@@ -94,12 +94,15 @@ def cerca_appartamenti(lat: float, lon: float, raggio_km: float, max_pagine: int
             
             # Estrai dati da questa pagina
             
-            # DEBUG: Stampa PRIMO result per vedere la struttura
+            # DEBUG: Stampa PRIMO result COMPLETO
             if pagina == 1 and len(results) > 0:
                 import json
-                print("[SCRAPER][DEBUG] === PRIMO RESULT COMPLETO ===")
-                print(json.dumps(results[0], indent=2)[:2000])  # Prime 2000 chars
-                print("[SCRAPER][DEBUG] === FINE ===")
+                json_str = json.dumps(results[0], indent=2)
+                print("[SCRAPER][DEBUG] === INIZIO JSON COMPLETO ===")
+                # Stampa a pezzi per evitare troncamenti
+                for i in range(0, len(json_str), 3000):
+                    print(json_str[i:i+3000])
+                print("[SCRAPER][DEBUG] === FINE JSON COMPLETO ===")
             
             for idx, result in enumerate(results):
                 real_estate = result.get('realEstate', {})
