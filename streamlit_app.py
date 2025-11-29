@@ -465,28 +465,42 @@ with tab3:
 with tab3b:
     st.header("🗺️ Mappa Interattiva Appartamenti")
     
-    print(f"[TAB_MAPPA] Entrato nel TAB Mappa")
-    print(f"[TAB_MAPPA] appartamenti type: {type(appartamenti)}")
-    print(f"[TAB_MAPPA] appartamenti len: {len(appartamenti) if appartamenti else 0}")
+    # USA SESSION_STATE per accedere ai dati dell'analisi
+    if 'analisi_data' not in st.session_state:
+        st.warning("⚠️ Esegui prima un'analisi per vedere la mappa.")
+        st.stop()
     
-    if not appartamenti or len(appartamenti) == 0:
-        print(f"[TAB_MAPPA] NESSUN appartamento - mostro warning")
+    data = st.session_state.analisi_data
+    appartamenti_data = data.get('appartamenti', [])
+    stats_data = data.get('stats_immobiliare')
+    
+    print(f"[TAB_MAPPA] Entrato nel TAB Mappa")
+    print(f"[TAB_MAPPA] appartamenti len: {len(appartamenti_data) if appartamenti_data else 0}")
+    
+    if not appartamenti_data or len(appartamenti_data) == 0:
+        print(f"[TAB_MAPPA] NESSUN appartamento")
         st.warning("⚠️ Nessun appartamento da visualizzare sulla mappa.")
     else:
-        print(f"[TAB_MAPPA] Ho {len(appartamenti)} appartamenti - creo mappa")
+        print(f"[TAB_MAPPA] Ho {len(appartamenti_data)} appartamenti")
         try:
-            # Crea mappa
-            # Usa il dataframe pulito (senza duplicati) invece della lista originale
-            appartamenti_per_mappa = stats_immobiliare['dataframe'].to_dict('records') if stats_immobiliare else appartamenti
+            # Usa il dataframe pulito (con coordinate!)
+            if stats_data and 'dataframe' in stats_data:
+                appartamenti_per_mappa = stats_data['dataframe'].to_dict('records')
+                print(f"[TAB_MAPPA] Uso dataframe: {len(appartamenti_per_mappa)} records")
+                if len(appartamenti_per_mappa) > 0:
+                    print(f"[TAB_MAPPA] Primo appartamento keys: {list(appartamenti_per_mappa[0].keys())}")
+            else:
+                appartamenti_per_mappa = appartamenti_data
+                print(f"[TAB_MAPPA] Uso lista originale")
             
             mappa = crea_mappa_interattiva(
-                lat_centro=lat,
-                lon_centro=lon,
-                via=via,
-                comune=comune,
-                raggio_km=raggio_km,
+                lat_centro=data['lat'],
+                lon_centro=data['lon'],
+                via=data['via'],
+                comune=data['comune'],
+                raggio_km=data['raggio_km'],
                 appartamenti=appartamenti_per_mappa,
-                stats_immobiliare=stats_immobiliare
+                stats_immobiliare=stats_data
             )
             
             # Mostra mappa con streamlit-folium
