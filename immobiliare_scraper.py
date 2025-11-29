@@ -93,6 +93,14 @@ def cerca_appartamenti(lat: float, lon: float, raggio_km: float, max_pagine: int
                 break
             
             # Estrai dati da questa pagina
+            
+            # DEBUG: Stampa PRIMO result per vedere la struttura
+            if pagina == 1 and len(results) > 0:
+                import json
+                print("[SCRAPER][DEBUG] === PRIMO RESULT COMPLETO ===")
+                print(json.dumps(results[0], indent=2)[:2000])  # Prime 2000 chars
+                print("[SCRAPER][DEBUG] === FINE ===")
+            
             for idx, result in enumerate(results):
                 real_estate = result.get('realEstate', {})
                 
