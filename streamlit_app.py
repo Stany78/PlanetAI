@@ -516,12 +516,16 @@ with tab3b:
             st.markdown("---")
             st.subheader("📊 Statistiche Geografiche")
             
-            map_stats = get_mappa_statistiche(appartamenti)
+            # Conta appartamenti reali (dopo rimozione duplicati)
+            n_appartamenti_reali = len(appartamenti_per_mappa) if isinstance(appartamenti_per_mappa, list) else 0
             
-            col1, col2, col3 = st.columns(3)
-            col1.metric("Totale Appartamenti", map_stats['totale'])
-            col2.metric("Con Coordinate", map_stats['con_coordinate'])
-            col3.metric("Senza Coordinate", map_stats['senza_coordinate'])
+            map_stats = get_mappa_statistiche(appartamenti_per_mappa)
+            
+            col1, col2, col3, col4 = st.columns(4)
+            col1.metric("Totale Appartamenti", n_appartamenti_reali)
+            col2.metric("Edifici Distinti", map_stats.get('edifici', 0))
+            col3.metric("Con Coordinate", map_stats['con_coordinate'])
+            col4.metric("Senza Coordinate", map_stats['senza_coordinate'])
             
             if map_stats['con_coordinate'] > 0:
                 st.caption(f"Distribuzione geografica: lat {map_stats['lat_min']:.4f} - {map_stats['lat_max']:.4f}, lon {map_stats['lon_min']:.4f} - {map_stats['lon_max']:.4f}")
