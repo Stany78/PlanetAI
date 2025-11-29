@@ -93,7 +93,7 @@ def cerca_appartamenti(lat: float, lon: float, raggio_km: float, max_pagine: int
                 break
             
             # Estrai dati da questa pagina
-            for result in results:
+            for idx, result in enumerate(results):
                 real_estate = result.get('realEstate', {})
                 
                 # ID del progetto (per raggruppare appartamenti dello stesso annuncio)
@@ -101,8 +101,18 @@ def cerca_appartamenti(lat: float, lon: float, raggio_km: float, max_pagine: int
                 
                 # COORDINATE GPS
                 location = real_estate.get('location', {})
+                
+                # DEBUG: Vediamo cosa c'è in location
+                if idx == 0:  # Solo per il primo appartamento
+                    print(f"[SCRAPER][DEBUG] location keys: {list(location.keys()) if location else 'VUOTO'}")
+                    print(f"[SCRAPER][DEBUG] location: {location}")
+                
                 latitudine = location.get('latitude')
                 longitudine = location.get('longitude')
+                
+                # DEBUG
+                if idx == 0:
+                    print(f"[SCRAPER][DEBUG] lat={latitudine}, lon={longitudine}")
                 
                 # Agenzia
                 agenzia = "N/D"
