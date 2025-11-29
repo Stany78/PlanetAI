@@ -110,20 +110,41 @@ def cerca_appartamenti(lat: float, lon: float, raggio_km: float, max_pagine: int
                 # ID del progetto (per raggruppare appartamenti dello stesso annuncio)
                 progetto_id = real_estate.get('id', 'N/D')
                 
-                # DEBUG: Stampa TUTTO real_estate per vedere cosa c'è
-                if idx == 0:
-                    print(f"[SCRAPER][DEBUG] === REAL_ESTATE KEYS ===")
-                    print(f"[SCRAPER][DEBUG] {list(real_estate.keys())}")
-                    
-                    # Cerca campi location/address
-                    for key in real_estate.keys():
-                        if 'location' in key.lower() or 'address' in key.lower() or 'via' in key.lower():
-                            print(f"[SCRAPER][DEBUG] {key}: {real_estate[key]}")
+                # COORDINATE GPS - CERCA IN TUTTI I POSTI POSSIBILI
+                latitudine = None
+                longitudine = None
                 
-                # COORDINATE GPS - prova location
+                # Opzione 1: location.latitude/longitude
                 location = real_estate.get('location', {})
-                latitudine = location.get('latitude') if location else None
-                longitudine = location.get('longitude') if location else None
+                if location:
+                    latitudine = location.get('latitude') or location.get('lat')
+                    longitudine = location.get('longitude') or location.get('lng') or location.get('lon')
+                
+                # Opzione 2: properties[0].location
+                if not latitudine and 'properties' in real_estate:
+                    props = real_estate.get('properties', [])
+                    if len(props) > 0:
+                        prop_loc = props[0].get('location', {})
+                        latitudine = prop_loc.get('latitude') or prop_loc.get('lat')
+                        longitudine = prop_loc.get('longitude') or prop_loc.get('lng')
+                
+                # Opzione 3: Direttamente in real_estate
+                if not latitudine:
+                    latitudine = real_estate.get('latitude') or real_estate.get('lat')
+                    longitudine = real_estate.get('longitude') or real_estate.get('lng') or real_estate.get('lon')
+                
+                # Opzione 4: geometry
+                if not latitudine and 'geometry' in real_estate:
+                    geom = real_estate.get('geometry', {})
+                    if 'coordinates' in geom:
+                        coords = geom.get('coordinates', [])
+                        if len(coords) >= 2:
+                            longitudine = coords[0]  # GeoJSON è lon, lat
+                            latitudine = coords[1]
+                
+                # DEBUG
+                if idx == 0:
+                    print(f"[SCRAPER][DEBUG] Coordinate trovate: lat={latitudine}, lon={longitudine}")
                 
                 # Agenzia
                 agenzia = "N/D"
