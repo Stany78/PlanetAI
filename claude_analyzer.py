@@ -230,58 +230,78 @@ Devi analizzare i dati di una zona immobiliare e fornire un'analisi chiara e pro
 
 **ANALISI RICHIESTA:**
 
-Fornisci un'analisi professionale in italiano, strutturata in questo modo:
+Fornisci un'analisi professionale in italiano focalizzata sulla **decisione di investimento immobiliare**, strutturata in questo modo:
 
-## 1. SINTESI
-Panoramica generale della zona e del mercato (2-3 paragrafi)
-- Cosa emerge dai dati
-- Principale differenza tra valori OMI e prezzi di mercato
+## 1. VERDICT - RACCOMANDAZIONE FINALE
 
-## 2. CONFRONTO OMI vs MERCATO
-- Quanto è il gap percentuale tra OMI e mercato?
-- Cosa significa questo gap? (prezzi alti, allineati, o bassi?)
-- Perché c'è questa differenza?
+**Inizia SEMPRE con una raccomandazione chiara:**
 
-## 3. ANALISI OFFERTA IMMOBILIARE.IT
-- Quanti appartamenti ci sono in vendita
-- Fascia di prezzo (entry level, medio, alto di gamma)
-- Come sono distribuiti i prezzi
-- Quali agenzie operano nella zona
+🟢 **INVESTIRE** - Zona con ottime opportunità  
+🟡 **VALUTARE** - Opportunità interessante ma con rischi  
+🔴 **EVITARE** - Zona sconsigliata per investimenti  
+⚪ **MONITORARE** - Aspettare evoluzione mercato  
 
-## 4. ANALISI DEVELOPER/INVESTITORI
-Usa le metriche Developer fornite per analizzare:
-- **Saturazione mercato**: Quanto è competitivo? (Libero/Medio/Saturo)
-- **Concentrazione agenzie**: Il mercato è frammentato o concentrato?
-- **Pricing strategy**: I prezzi attuali sono sostenibili? Gap OMI giustificato?
-- **Opportunità per developer**: È un buon momento per entrare nel mercato?
+Poi spiega in 2-3 righe il PERCHÉ di questa raccomandazione.
 
-## 5. VALUTAZIONE DELLA ZONA
-- Come si posiziona questa zona rispetto ai valori OMI
-- È una zona economica, media o di prestigio?
-- Cosa giustifica i prezzi attuali
+## 2. ANALISI MERCATO - NUMERI CHIAVE
 
-## 6. CONSIGLI PRATICI
+**Saturazione:** [Libero/Medio/Saturo] - [Spiegazione breve]
+**Gap OMI/Mercato:** [X%] - Interpretazione (sottovalutato/allineato/sopravvalutato)
+**Numero Opportunità:** [N appartamenti] - Quanto mercato c'è?
+**Concentrazione:** [Alta/Media/Bassa] - Quanto è competitivo?
 
-**Per chi vuole comprare:**
-- Conviene comprare ora o aspettare?
-- I prezzi sono giusti o troppo alti?
-- Su cosa fare attenzione
+## 3. OPPORTUNITÀ DEVELOPER
 
-**Per chi vuole vendere:**
-- I prezzi richiesti sono realistici?
-- C'è margine per alzare/abbassare?
-- Come è la concorrenza
+**PUNTI DI FORZA (+)**
+- [3-5 punti bullet che rendono la zona attraente]
+
+**RISCHI E CRITICITÀ (-)**
+- [3-5 punti bullet di attenzione/rischio]
+
+**TARGET IDEALE:**
+Chi dovrebbe investire qui? (es: primo investitore, developer esperti, etc)
+
+## 4. STRATEGIA PREZZI
+
+**Posizionamento suggerito:**
+- Fascia prezzo raccomandata: €X.XXX - €X.XXX/m²
+- Giustificazione: [Perché questi prezzi?]
+- Tempo di assorbimento stimato: [Veloce/Medio/Lento]
+
+**Pricing vs Competizione:**
+- Come posizionarsi rispetto ai competitor
+- Margini di negoziazione attesi
+
+## 5. ANALISI ZONA (2-3 paragrafi)
+
+- Caratteristiche della zona (centrale/periferica, servizi, collegamenti)
+- Fascia socio-economica target
+- Trend e prospettive future
+
+## 6. ACTION ITEMS - PROSSIMI PASSI
+
+**Se decidi di INVESTIRE:**
+1. [Primo passo operativo]
+2. [Secondo passo]
+3. [Terzo passo]
+
+**Se decidi di ASPETTARE:**
+- Cosa monitorare
+- Trigger per rientrare
 
 **STILE:**
-- Scrivi in italiano semplice ma professionale
-- Usa i numeri concreti dall'analisi
-- Spiega i concetti tecnici in modo chiaro
-- Evita termini inglesi dove possibile
-- Dai consigli pratici e diretti
-- Non usare emoji
+- Scrivi in italiano professionale ma diretto
+- Sii CHIARO e DECISIVO - niente "potrebbe" o "forse"
+- Usa numeri concreti e percentuali
+- Dai raccomandazioni AZIONABILI
+- Focus su ROI e opportunità business
+- Linguaggio da Developer/Investitore, non da agenzia immobiliare
+- Non usare emoji (tranne nel VERDICT iniziale)
 
 **IMPORTANTE:** 
-Se alcuni dati mancano, dillo chiaramente e lavora con quello che hai.
+- La priorità è dare una DECISIONE CHIARA
+- Se mancano dati, dichiaralo e lavora su quello che hai
+- Meglio un'analisi parziale ma utile che genericità
 """
     
     return prompt
