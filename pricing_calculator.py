@@ -99,22 +99,30 @@ def calcola_pricing_intelligente(
         fattori['saturazione_label'] = saturazione_label
     
     # 3. AGGIUSTAMENTO GAP MERCATO
-    # Se il mercato attuale è molto sopra OMI, c'è rischio bolla
+    # Se il mercato attuale è molto sopra OMI, bisogna capire se è bolla o realtà
     aggiustamento_gap = 0.0
+    usa_mercato_diretto = False
     
     if stats_immobiliare and stats_immobiliare.get('prezzo_mq'):
         mercato_med = stats_immobiliare['prezzo_mq']['mediano']
         gap_percentuale = ((mercato_med - base_omi) / base_omi) * 100
         
-        if gap_percentuale > 50:
-            # GAP MOLTO ALTO - Possibile bolla, riduci ambizioni
-            aggiustamento_gap = -0.08  # -8% (sii conservativo)
-            gap_label = "MOLTO ALTO (+50%) - Rischio bolla"
+        if gap_percentuale > 50 and n_appartamenti and n_appartamenti > 20:
+            # GAP MOLTO ALTO + MERCATO ATTIVO = Usa mercato come riferimento
+            # Se ci sono 20+ appartamenti a questi prezzi, è il valore reale
+            usa_mercato_diretto = True
+            gap_label = "MOLTO ALTO (+50%) - Usa prezzi mercato reali"
+            fattori['mercato_mediano'] = mercato_med
+            
+        elif gap_percentuale > 50:
+            # GAP ALTO ma poco mercato = possibile bolla/pochi dati
+            aggiustamento_gap = -0.05  # -5% prudenza
+            gap_label = "MOLTO ALTO (+50%) - Prudenza, pochi dati"
             
         elif gap_percentuale > 35:
-            # GAP ALTO - Mercato caldo ma sostenibile
-            aggiustamento_gap = -0.03  # -3% (prudenza)
-            gap_label = "ALTO (+35-50%) - Mercato caldo"
+            # GAP ALTO - Premium significativo ma sostenibile
+            aggiustamento_gap = -0.02  # -2% (leggera prudenza)
+            gap_label = "ALTO (+35-50%) - Premium sostenibile"
             
         elif gap_percentuale > 20:
             # GAP NORMALE - Premium standard nuove costruzioni
@@ -134,6 +142,7 @@ def calcola_pricing_intelligente(
         fattori['aggiustamento_gap'] = aggiustamento_gap
         fattori['gap_label'] = gap_label
         fattori['gap_percentuale'] = gap_percentuale
+        fattori['usa_mercato_diretto'] = usa_mercato_diretto
     
     # 4. FATTORE RISCHIO (concentrazione agenzie)
     # Se poche agenzie dominano, c'è controllo prezzi
@@ -169,25 +178,68 @@ def calcola_pricing_intelligente(
             fattori['concentrazione_label'] = concentrazione_label
     
     # CALCOLO FINALE
-    fattore_totale = (
-        1.0 +
-        fattori['premium_nuova_costruzione'] +
-        fattori['aggiustamento_saturazione'] +
-        fattori['aggiustamento_gap'] +
-        fattori['fattore_rischio']
-    )
-    
-    prezzo_ottimale = base_omi * fattore_totale
-    
-    # RANGE CONSIGLIATO (±8% dal prezzo ottimale)
-    prezzo_minimo = prezzo_ottimale * 0.92  # -8%
-    prezzo_massimo = prezzo_ottimale * 1.08  # +8%
+    if fattori.get('usa_mercato_diretto'):
+        # Usa mercato mediano ±aggiustamenti minori
+        mercato_med = fattori['mercato_mediano']
+        
+        # Applica solo saturazione e rischio (non premium che è già nel mercato)
+        fattore_aggiustamento = (
+            fattori['aggiustamento_saturazione'] +
+            fattori['fattore_rischio']
+        )
+        
+        prezzo_ottimale = mercato_med * (1 + fattore_aggiustamento)
+        prezzo_minimo = prezzo_ottimale * 0.92  # -8%
+        prezzo_massimo = prezzo_ottimale * 1.08  # +8%
+        
+        fattori['base_calcolo'] = mercato_med
+        fattori['metodo'] = 'mercato_diretto'
+        
+    else:
+        # Calcolo standard da OMI
+        fattore_totale = (
+            1.0 +
+            fattori['premium_nuova_costruzione'] +
+            fattori['aggiustamento_saturazione'] +
+            fattori['aggiustamento_gap'] +
+            fattori['fattore_rischio']
+        )
+        
+        prezzo_ottimale = base_omi * fattore_totale
+        prezzo_minimo = prezzo_ottimale * 0.92  # -8%
+        prezzo_massimo = prezzo_ottimale * 1.08  # +8%
+        
+        fattori['base_calcolo'] = base_omi
+        fattori['metodo'] = 'omi_base'
     
     # LOGICA DI CALCOLO
-    logica_calcolo = f"""
+    if fattori.get('usa_mercato_diretto'):
+        logica_calcolo = f"""
 CALCOLO PRICING BENCHMARK:
 
-Base OMI: €{base_omi:,.0f}/m²
+⚠️ METODO: Prezzi Mercato Diretto
+Gap OMI troppo alto (+{fattori['gap_percentuale']:.1f}%) con mercato attivo ({n_appartamenti} appartamenti).
+Utilizzo prezzi mercato reali come riferimento.
+
+Base Mercato: €{fattori['mercato_mediano']:,.0f}/m²
+(OMI teorico: €{fattori['base_omi']:,.0f}/m² - non rappresentativo)
+
+Aggiustamenti applicati:
+• Saturazione mercato: {fattori['aggiustamento_saturazione']*100:+.1f}% ({fattori.get('saturazione_label', 'N/D')})
+• Fattore rischio: {fattori['fattore_rischio']*100:+.1f}% ({fattori.get('concentrazione_label', 'N/D')})
+
+Aggiustamento totale: {(fattori['aggiustamento_saturazione'] + fattori['fattore_rischio'])*100:+.1f}%
+
+RANGE CONSIGLIATO:
+• Minimo (entry conservative): €{prezzo_minimo:,.0f}/m²
+• Ottimale (sweet spot): €{prezzo_ottimale:,.0f}/m²
+• Massimo (ceiling realistico): €{prezzo_massimo:,.0f}/m²
+"""
+    else:
+        logica_calcolo = f"""
+CALCOLO PRICING BENCHMARK:
+
+Base OMI: €{fattori['base_calcolo']:,.0f}/m²
 
 Aggiustamenti applicati:
 • Premium nuova costruzione: +{fattori['premium_nuova_costruzione']*100:.1f}%
@@ -195,7 +247,7 @@ Aggiustamenti applicati:
 • Gap vs mercato: {fattori['aggiustamento_gap']*100:+.1f}% ({fattori.get('gap_label', 'N/D')})
 • Fattore rischio: {fattori['fattore_rischio']*100:+.1f}% ({fattori.get('concentrazione_label', 'N/D')})
 
-Fattore totale: {(fattore_totale-1)*100:+.1f}%
+Fattore totale: {(fattori['premium_nuova_costruzione'] + fattori['aggiustamento_saturazione'] + fattori['aggiustamento_gap'] + fattori['fattore_rischio'])*100:+.1f}%
 
 RANGE CONSIGLIATO:
 • Minimo (entry conservative): €{prezzo_minimo:,.0f}/m²
