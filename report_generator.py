@@ -13,7 +13,14 @@ import pandas as pd
 from docx import Document
 from docx.shared import Pt, RGBColor, Inches
 from docx.enum.text import WD_ALIGN_PARAGRAPH
-from map_generator import crea_mappa_interattiva
+
+# Import opzionale per la mappa
+try:
+    from map_generator import crea_mappa_interattiva
+    MAP_AVAILABLE = True
+except ImportError:
+    MAP_AVAILABLE = False
+    print("⚠️ Modulo map_generator non disponibile - mappa disabilitata nel report")
 
 
 def genera_report_combinato(
@@ -280,28 +287,76 @@ def genera_report_combinato(
         
         doc.add_paragraph()
         
-        # 2. PRICING BENCHMARK
+        # 2. PRICING BENCHMARK INTELLIGENTE
         doc.add_heading('2. Pricing Benchmark', 2)
         
-        mercato_min = stats_immobiliare['prezzo_mq']['min']
-        mercato_max = stats_immobiliare['prezzo_mq']['max']
-        gap_percentuale = ((mercato_med - omi_med) / omi_med) * 100
+        # Importa e calcola pricing intelligente
+        from pricing_calculator import calcola_pricing_intelligente
         
-        price_table = doc.add_table(rows=5, cols=2)
-        price_table.style = 'Light Grid Accent 1'
+        pricing = calcola_pricing_intelligente(zona_omi, stats_immobiliare)
         
-        price_data = [
-            ['OMI Mediano (Baseline)', f"€{omi_med:,.0f}/m²"],
-            ['Mercato Range', f"€{mercato_min:,.0f} - €{mercato_max:,.0f}/m²"],
-            ['Mercato Mediano', f"€{mercato_med:,.0f}/m²"],
-            ['Gap vs OMI', f"{gap_percentuale:+.1f}%"],
-            ['Sweet Spot Consigliato', f"€{mercato_med:,.0f}/m²"]
-        ]
-        
-        for i, (label, value) in enumerate(price_data):
-            price_table.rows[i].cells[0].text = label
-            price_table.rows[i].cells[0].paragraphs[0].runs[0].font.bold = True
-            price_table.rows[i].cells[1].text = value.replace(',', '.')
+        if pricing['prezzo_ottimale']:
+            # Tabella con range consigliato
+            price_table = doc.add_table(rows=4, cols=2)
+            price_table.style = 'Light Grid Accent 1'
+            
+            price_data = [
+                ['💚 Prezzo Minimo (Conservative)', f"€{pricing['prezzo_minimo']:,.0f}/m²"],
+                ['🎯 Prezzo Ottimale (Sweet Spot)', f"€{pricing['prezzo_ottimale']:,.0f}/m²"],
+                ['🔴 Prezzo Massimo (Ceiling)', f"€{pricing['prezzo_massimo']:,.0f}/m²"],
+                ['📊 Base OMI (Riferimento)', f"€{omi_med:,.0f}/m²"]
+            ]
+            
+            for i, (label, value) in enumerate(price_data):
+                price_table.rows[i].cells[0].text = label
+                price_table.rows[i].cells[0].paragraphs[0].runs[0].font.bold = True
+                price_table.rows[i].cells[1].text = value.replace(',', '.')
+                
+                # Evidenzia sweet spot
+                if 'Ottimale' in label:
+                    for cell in price_table.rows[i].cells:
+                        cell.paragraphs[0].runs[0].font.color.rgb = RGBColor(0, 128, 0)
+            
+            doc.add_paragraph()
+            
+            # Spiegazione calcolo
+            p = doc.add_paragraph()
+            p.add_run('Logica di calcolo:').bold = True
+            
+            # Estrai fattori
+            fattori = pricing['fattori']
+            
+            doc.add_paragraph(f"• Base OMI: €{fattori['base_omi']:,.0f}/m²")
+            doc.add_paragraph(f"• Premium nuova costruzione: +{fattori['premium_nuova_costruzione']*100:.1f}%")
+            
+            if 'saturazione_label' in fattori:
+                doc.add_paragraph(f"• Saturazione mercato: {fattori['aggiustamento_saturazione']*100:+.1f}% ({fattori['saturazione_label']})")
+            
+            if 'gap_label' in fattori:
+                doc.add_paragraph(f"• Gap vs mercato attuale: {fattori['aggiustamento_gap']*100:+.1f}% ({fattori['gap_label']})")
+            
+            if 'concentrazione_label' in fattori:
+                doc.add_paragraph(f"• Fattore rischio/concentrazione: {fattori['fattore_rischio']*100:+.1f}% ({fattori['concentrazione_label']})")
+            
+            # Calcola fattore totale
+            fattore_tot = (
+                fattori['premium_nuova_costruzione'] +
+                fattori['aggiustamento_saturazione'] +
+                fattori['aggiustamento_gap'] +
+                fattori['fattore_rischio']
+            )
+            
+            p2 = doc.add_paragraph()
+            run = p2.add_run(f"Fattore totale applicato: {fattore_tot*100:+.1f}%")
+            run.bold = True
+            if fattore_tot > 0.25:
+                run.font.color.rgb = RGBColor(255, 0, 0)  # Rosso se molto alto
+            elif fattore_tot > 0.15:
+                run.font.color.rgb = RGBColor(255, 165, 0)  # Arancione
+            else:
+                run.font.color.rgb = RGBColor(0, 128, 0)  # Verde
+        else:
+            doc.add_paragraph('⚠ Pricing benchmark non calcolabile - dati OMI mancanti')
         
         doc.add_paragraph()
         
@@ -483,7 +538,7 @@ def genera_report_combinato(
     # ========================================
     # SEZIONE MAPPA INTERATTIVA
     # ========================================
-    if appartamenti and len(appartamenti) > 0:
+    if MAP_AVAILABLE and appartamenti and len(appartamenti) > 0:
         doc.add_page_break()
         doc.add_heading('🗺️ Mappa Appartamenti', 1)
         

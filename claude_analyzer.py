@@ -88,7 +88,8 @@ def prepara_prompt_analisi(
     via: str,
     zona_omi: Optional[Dict],
     stats_immobiliare: Optional[Dict],
-    gap_analysis: Optional[Dict]
+    gap_analysis: Optional[Dict],
+    pricing_benchmark: Optional[Dict] = None
 ) -> str:
     """
     Prepara il prompt per Claude con tutti i dati.
@@ -99,6 +100,7 @@ def prepara_prompt_analisi(
         zona_omi: Dati OMI
         stats_immobiliare: Statistiche mercato
         gap_analysis: Analisi gap
+        pricing_benchmark: Pricing intelligente calcolato
     
     Returns:
         str: Prompt formattato
@@ -224,6 +226,25 @@ Devi analizzare i dati di una zona immobiliare e fornire un'analisi chiara e pro
 - Gap Percentuale: {gap_analysis['gap_percentuale']:+.1f}%
 """
     
+    if pricing_benchmark and pricing_benchmark.get('prezzo_ottimale'):
+        prompt += f"""
+---
+
+**PRICING BENCHMARK INTELLIGENTE:**
+(Calcolato considerando: OMI, saturazione, gap mercato, concentrazione)
+
+- 💚 Prezzo Minimo (Conservative): €{pricing_benchmark['prezzo_minimo']:,.0f}/m²
+- 🎯 Prezzo Ottimale (Sweet Spot): €{pricing_benchmark['prezzo_ottimale']:,.0f}/m²
+- 🔴 Prezzo Massimo (Ceiling): €{pricing_benchmark['prezzo_massimo']:,.0f}/m²
+
+Fattori considerati nel calcolo:
+- Base OMI: €{pricing_benchmark['fattori']['base_omi']:,.0f}/m²
+- Premium nuova costruzione: +{pricing_benchmark['fattori']['premium_nuova_costruzione']*100:.1f}%
+- Saturazione: {pricing_benchmark['fattori']['aggiustamento_saturazione']*100:+.1f}%
+- Gap: {pricing_benchmark['fattori']['aggiustamento_gap']*100:+.1f}%
+- Rischio: {pricing_benchmark['fattori']['fattore_rischio']*100:+.1f}%
+"""
+    
     prompt += """
 
 ---
@@ -328,6 +349,7 @@ def analizza_con_ai(
             'success': bool,
             'analisi_completa': str (markdown),
             'gap_analysis': dict (se disponibile),
+            'pricing_benchmark': dict (se disponibile),
             'raccomandazioni': list[str] (se disponibile),
             'error': str (se success=False)
         }
@@ -356,13 +378,18 @@ def analizza_con_ai(
         # Calcola gap analysis se possibile
         gap_analysis = calcola_gap_analysis(zona_omi, stats_immobiliare)
         
+        # Calcola pricing intelligente
+        from pricing_calculator import calcola_pricing_intelligente
+        pricing_benchmark = calcola_pricing_intelligente(zona_omi, stats_immobiliare)
+        
         # Prepara prompt
         prompt = prepara_prompt_analisi(
             comune=comune,
             via=via,
             zona_omi=zona_omi,
             stats_immobiliare=stats_immobiliare,
-            gap_analysis=gap_analysis
+            gap_analysis=gap_analysis,
+            pricing_benchmark=pricing_benchmark
         )
         
         # Inizializza client Anthropic
@@ -408,6 +435,7 @@ def analizza_con_ai(
             'success': True,
             'analisi_completa': analisi_completa,
             'gap_analysis': gap_analysis,
+            'pricing_benchmark': pricing_benchmark,
             'raccomandazioni': raccomandazioni if raccomandazioni else None
         }
         

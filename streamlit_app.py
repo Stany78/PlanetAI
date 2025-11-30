@@ -595,60 +595,80 @@ with tab4:
         st.markdown("---")
         
         # ========================================
-        # 2. PRICING BENCHMARK
+        # 2. PRICING BENCHMARK INTELLIGENTE
         # ========================================
         st.subheader("💰 2. Pricing Benchmark")
         
+        # Calcola pricing intelligente
+        from pricing_calculator import calcola_pricing_intelligente
+        
+        pricing = calcola_pricing_intelligente(zona_omi, stats_immobiliare)
+        
+        if pricing['prezzo_ottimale']:
+            # Range prezzi consigliato
+            col1, col2, col3 = st.columns(3)
+            
+            with col1:
+                st.metric("💚 Minimo (Conservative)", 
+                         f"€{pricing['prezzo_minimo']:,.0f}/m²".replace(',', '.'))
+                st.caption("Entry level - vendita veloce")
+            
+            with col2:
+                st.metric("🎯 Ottimale (Sweet Spot)", 
+                         f"€{pricing['prezzo_ottimale']:,.0f}/m²".replace(',', '.'),
+                         delta=f"+{((pricing['prezzo_ottimale']/zona_omi['val_med_mq'])-1)*100:.1f}% vs OMI")
+                st.caption("**CONSIGLIATO**")
+            
+            with col3:
+                st.metric("🔴 Massimo (Ceiling)", 
+                         f"€{pricing['prezzo_massimo']:,.0f}/m²".replace(',', '.'))
+                st.caption("Se qualità premium")
+            
+            st.markdown("---")
+            
+            # Dettaglio calcolo
+            with st.expander("📊 Come calcoliamo il pricing *"):
+                fattori = pricing['fattori']
+                
+                st.markdown(f"""
+**Base di calcolo:**
+- OMI Mediano (rogiti reali): €{fattori['base_omi']:,.0f}/m²
+
+**Aggiustamenti applicati:**
+1. Premium nuova costruzione: **+{fattori['premium_nuova_costruzione']*100:.1f}%**
+   - Standard mercato italiano per nuove costruzioni
+                
+2. Saturazione mercato: **{fattori['aggiustamento_saturazione']*100:+.1f}%**
+   - {fattori.get('saturazione_label', 'N/D')}
+   - Meno concorrenza = prezzi più alti sostenibili
+                
+3. Gap vs mercato attuale: **{fattori['aggiustamento_gap']*100:+.1f}%**
+   - {fattori.get('gap_label', 'N/D')}
+   - Calibrato su realtà prezzi attuali
+                
+4. Fattore rischio/concentrazione: **{fattori['fattore_rischio']*100:+.1f}%**
+   - {fattori.get('concentrazione_label', 'N/D')}
+   - Mercato frammentato = più flessibilità pricing
+                
+**Fattore totale:** {(fattori['premium_nuova_costruzione'] + fattori['aggiustamento_saturazione'] + fattori['aggiustamento_gap'] + fattori['fattore_rischio'])*100:+.1f}%
+
+**Risultato finale:** €{fattori['base_omi']:,.0f} × {1 + (fattori['premium_nuova_costruzione'] + fattori['aggiustamento_saturazione'] + fattori['aggiustamento_gap'] + fattori['fattore_rischio']):.3f} = €{pricing['prezzo_ottimale']:,.0f}/m²
+                """.replace(',', '.'))
+                
+                st.info("💡 **Nota:** Questo calcolo considera dinamiche di mercato reali (saturazione, gap, concentrazione) per un pricing ottimale che massimizza vendibilità e margini.")
+        else:
+            st.warning("⚠ Pricing benchmark non calcolabile - dati OMI mancanti")
+        
+        st.markdown("---")
+        
+        # ========================================
+        # 3. GAP ANALYSIS STRATEGICO
+        # ========================================
+        st.subheader("📊 3. Gap Analysis Strategico")
+        
         omi_med = zona_omi['val_med_mq']
-        mercato_min = stats_immobiliare['prezzo_mq']['min']
         mercato_med = stats_immobiliare['prezzo_mq']['mediano']
-        mercato_max = stats_immobiliare['prezzo_mq']['max']
-        
-        # Tabella comparativa
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            st.markdown("**📊 Valori OMI (Rogiti Reali)**")
-            st.metric("Valore Mediano OMI", f"€{omi_med:,.0f}/m²".replace(',', '.'))
-            st.caption("Baseline ufficiale Agenzia Entrate")
-        
-        with col2:
-            st.markdown("**🏠 Mercato Nuove Costruzioni**")
-            st.metric("Range Prezzi", 
-                     f"€{mercato_min:,.0f} - €{mercato_max:,.0f}/m²".replace(',', '.'))
-            st.metric("Prezzo Mediano", f"€{mercato_med:,.0f}/m²".replace(',', '.'))
-        
-        st.markdown("---")
-        
-        # Target pricing consigliato
-        st.markdown("**🎯 Target Pricing Consigliato**")
-        
         gap_percentuale = ((mercato_med - omi_med) / omi_med) * 100
-        
-        # Calcola sweet spot
-        target_min = mercato_med * 0.95  # -5% dal mediano
-        target_max = mercato_med * 1.05  # +5% dal mediano
-        
-        col1, col2, col3 = st.columns(3)
-        
-        with col1:
-            st.metric("Entry Level", f"€{target_min:,.0f}/m²".replace(',', '.'))
-            st.caption("Per vendita veloce")
-        
-        with col2:
-            st.metric("Sweet Spot", f"€{mercato_med:,.0f}/m²".replace(',', '.'))
-            st.caption("Consigliato")
-        
-        with col3:
-            st.metric("Premium", f"€{target_max:,.0f}/m²".replace(',', '.'))
-            st.caption("Se alta qualità")
-        
-        st.markdown("---")
-        
-        # ========================================
-        # 4. GAP ANALYSIS STRATEGICO
-        # ========================================
-        st.subheader("📊 4. Gap Analysis Strategico")
         
         col1, col2, col3 = st.columns(3)
         
