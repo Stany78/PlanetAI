@@ -329,8 +329,8 @@ def genera_report_combinato(
             doc.add_paragraph(f"• Base OMI: €{fattori['base_omi']:,.0f}/m²")
             doc.add_paragraph(f"• Premium nuova costruzione: +{fattori['premium_nuova_costruzione']*100:.1f}%")
             
-            if 'saturazione_label' in fattori:
-                doc.add_paragraph(f"• Saturazione mercato: {fattori['aggiustamento_saturazione']*100:+.1f}% ({fattori['saturazione_label']})")
+            if 'spread_label' in fattori:
+                doc.add_paragraph(f"• Spread prezzi: {fattori['aggiustamento_spread']*100:+.1f}% ({fattori['spread_label']})")
             
             if 'gap_label' in fattori:
                 doc.add_paragraph(f"• Gap vs mercato attuale: {fattori['aggiustamento_gap']*100:+.1f}% ({fattori['gap_label']})")
