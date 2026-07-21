@@ -872,4 +872,3 @@ if __name__ == "__main__":
     for k, v in risultato["stima_nuova_costruzione"].items():
         print(f"  {k.capitalize():<10}: {v:,.0f} €/mq".replace(",", "."))
 
-    genera_report_word(risultato)
