@@ -280,7 +280,7 @@ with tab1:
             col_med.metric("Mediano", f"€{zona_omi['val_med_mq']:,.0f}".replace(',', '.'))
             col_max.metric("Massimo", f"€{zona_omi['val_max_mq']:,.0f}".replace(',', '.'))
         
-        st.caption("Fonte: dati ufficiali rogiti - Agenzia delle Entrate (QI 2025/1)")
+        st.caption("Fonte: dati ufficiali rogiti - Agenzia delle Entrate (Q2 2025/2)")
     else:
         st.warning("⚠️ Dati OMI non disponibili per questa zona.")
 
