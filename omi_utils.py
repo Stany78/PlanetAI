@@ -271,19 +271,21 @@ def _get_valori_for_zona(
     provincia_kml: Optional[str] = None,
 ) -> Optional[OMIQuotazione]:
     """
-    Dato il codice di zona (es. 'B2') e (opzionale) il Comune/Provincia
-    provenienti dal KML, estrae i valori dal CSV OMI.
+    Dato il codice di zona (es. 'B2') e Comune/Provincia dal KML,
+    estrae i valori dal CSV OMI.
 
-    BUG PRECEDENTE:
-      filtrava SOLO per 'Zona', quindi per 'B2' prendeva la prima B2
-      dell'intero dataset (es. Asti) invece della B2 del comune corretto.
+    REGOLA FONDAMENTALE (fix v2): la ricerca NON attraversa MAI i confini
+    del comune. Il vecchio fallback "Solo Zona" restituiva la prima zona
+    omonima d'Italia (es. R4 di Castel Volturno -> Montiglio Monferrato AT).
 
-    ORA:
-      filtra in modo gerarchico:
-        1. Zona + Comune + Provincia (match più stretto)
-        2. Zona + Provincia
-        3. Zona + Comune
-        4. Solo Zona (fallback estremo)
+    Logica:
+      1. Righe con Zona + Comune (+ Provincia se disponibile)
+      2. Tipologia: preferisci Abitazioni civili/signorili;
+         se assenti, altre tipologie residenziali dello STESSO comune
+         (economiche, ville e villini)
+      3. Se nessuna quotazione residenziale esiste per quella zona/comune,
+         restituisce la zona con valori None (onesto: "quotazione non
+         disponibile"), MAI dati di un altro comune.
     """
     _load_omi_csvs()
 
@@ -301,79 +303,75 @@ def _get_valori_for_zona(
     comune_up = _norm(comune_kml)
     prov_up = _norm(provincia_kml)
 
-    # FILTRO ABITAZIONI: Solo abitazioni civili e signorili
-    if "Descr_Tipologia" in df.columns:
-        df = df[df["Descr_Tipologia"].str.upper().isin(["ABITAZIONI CIVILI", "ABITAZIONI SIGNORILI"])]
-
-    # 1) Zona + Comune + Provincia
+    # ---- 1) Candidati: SEMPRE vincolati al comune del KML ----
     mask = df["Zona"].str.upper().eq(zona_up)
     if comune_up:
         mask = mask & df["Comune_descrizione"].str.upper().eq(comune_up)
     if prov_up:
         mask = mask & df["Prov"].str.upper().eq(prov_up)
+    cand = df.loc[mask]
 
-    rows = df.loc[mask]
+    # Riprova senza provincia (possibili discrepanze di sigla), comune sempre obbligatorio
+    if cand.empty and comune_up and prov_up:
+        mask = df["Zona"].str.upper().eq(zona_up) & df[
+            "Comune_descrizione"
+        ].str.upper().eq(comune_up)
+        cand = df.loc[mask]
 
-    # 2) Zona + Provincia (se nulla)
-    if rows.empty and prov_up:
-        mask = (df["Zona"].str.upper().eq(zona_up)) & (
-            df["Prov"].str.upper().eq(prov_up)
-        )
-        rows = df.loc[mask]
+    # ---- 2) Selezione tipologia (preferenza, non filtro rigido) ----
+    TIPOLOGIE_PREFERITE = ["ABITAZIONI CIVILI", "ABITAZIONI SIGNORILI"]
+    TIPOLOGIE_RESIDENZIALI = TIPOLOGIE_PREFERITE + [
+        "ABITAZIONI DI TIPO ECONOMICO",
+        "VILLE E VILLINI",
+    ]
 
-    # 3) Zona + Comune (se ancora nulla)
-    if rows.empty and comune_up:
-        mask = (df["Zona"].str.upper().eq(zona_up)) & (
-            df["Comune_descrizione"].str.upper().eq(comune_up)
-        )
-        rows = df.loc[mask]
+    rows = cand
+    if not cand.empty and "Descr_Tipologia" in cand.columns:
+        tip = cand["Descr_Tipologia"].str.upper()
+        pref = cand[tip.isin(TIPOLOGIE_PREFERITE)]
+        if pref.empty:
+            pref = cand[tip.isin(TIPOLOGIE_RESIDENZIALI)]
+            if DEBUG_MODE and not pref.empty:
+                print(
+                    f"[OMI] Zona {zona_up} ({comune_up}): nessuna abitazione "
+                    f"civile/signorile, uso altre tipologie residenziali."
+                )
+        rows = pref  # se vuoto: zona senza quotazioni residenziali
 
-    # 4) Solo Zona (fallback)
-    if rows.empty:
-        rows = df.loc[df["Zona"].str.upper().eq(zona_up)]
-
-    if rows.empty:
-        if DEBUG_MODE:
-            print(
-                f"[OMI] Nessuna riga CSV trovata per zona={zona_up}, "
-                f"comune='{comune_kml}', prov='{provincia_kml}'"
-            )
-        return None
-
-    # Comune / Provincia effettivi (presi dalla riga CSV scelta)
-    comune = rows["Comune_descrizione"].iloc[0].title()
-    provincia = rows["Prov"].iloc[0].upper()
-
-    # Descrizione zona (dal CSV zone, se disponibile)
+    # ---- Descrizione zona (dal CSV zone, vincolata al comune) ----
     zona_descr = f"Zona OMI {zona_up}"
     if dfz is not None and not dfz.empty:
         mask_z = dfz["Zona"].str.upper().eq(zona_up)
         if comune_up:
             mask_z = mask_z & dfz["Comune_descrizione"].str.upper().eq(comune_up)
-        if prov_up:
-            mask_z = mask_z & dfz["Prov"].str.upper().eq(prov_up)
-
         rz = dfz.loc[mask_z]
-        if rz.empty:
-            # fallback: solo per Zona
-            rz = dfz.loc[dfz["Zona"].str.upper().eq(zona_up)]
-
         if not rz.empty:
             raw_descr = str(rz["Zona_Descr"].iloc[0] or "")
-
-            # Rimozione apici e spazi inutili
-            clean_descr = raw_descr.strip().strip("'").strip()
-
-            # Rendi le maiuscole più leggibili (Titolo)
-            clean_descr = clean_descr.title()
-
-            # Migliora la leggibilità dei separatori OMI
-            clean_descr = clean_descr.replace(" :", " – ").replace(": ", " – ")
-
+            clean_descr = raw_descr.strip().strip("'").strip().title()
+            clean_descr = clean_descr.replace(" :", " \u2013 ").replace(": ", " \u2013 ")
             zona_descr = clean_descr
 
+    # ---- 3) Nessuna quotazione residenziale: zona onesta, valori None ----
+    if rows.empty:
+        if DEBUG_MODE:
+            print(
+                f"[OMI] Zona {zona_up} di {comune_up or '?'} ({prov_up or '?'}): "
+                f"nessuna quotazione residenziale disponibile nel CSV. "
+                f"NESSUN fallback su altri comuni."
+            )
+        return OMIQuotazione(
+            comune=(comune_kml or "").title() or "N/D",
+            provincia=prov_up or "N/D",
+            zona_codice=zona_up,
+            zona_descrizione=zona_descr,
+            val_min_mq=None,
+            val_med_mq=None,
+            val_max_mq=None,
+        )
 
-    # Calcolo min / max / med usando Compr_min / Compr_max
+    comune = rows["Comune_descrizione"].iloc[0].title()
+    provincia = rows["Prov"].iloc[0].upper()
+
     vals_min = rows["Compr_min"].apply(_safe_float).dropna().tolist()
     vals_max = rows["Compr_max"].apply(_safe_float).dropna().tolist()
 
