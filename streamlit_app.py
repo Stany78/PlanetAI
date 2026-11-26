@@ -864,45 +864,14 @@ with tab5:
             # Download analisi come testo
             st.subheader("💾 Salva Analisi")
             
-            # Prepara testo completo
-            testo_completo = f"""ANALISI AI - Planet AI
-{'='*70}
-Località: {data['via']}, {data['comune']}
-Data: {datetime.now().strftime('%d/%m/%Y %H:%M')}
-{'='*70}
-
-"""
-            
-            if risultato.get('gap_analysis'):
-                gap = risultato['gap_analysis']
-                testo_completo += f"""
-GAP ANALYSIS
-------------
-OMI Mediano: €{gap['omi_mediano']:,.0f}/m²
-Mercato Mediano: €{gap['mercato_mediano']:,.0f}/m²
-Gap: {gap['gap_percentuale']:+.1f}% (€{gap['gap_assoluto']:,.0f}/m²)
-
-"""
-            
-            testo_completo += f"""
-ANALISI DETTAGLIATA
--------------------
-{risultato['analisi_completa']}
-
-"""
-            
-            if risultato.get('raccomandazioni'):
-                testo_completo += "\nRACCOMANDAZIONI\n---------------\n"
-                for i, racc in enumerate(risultato['raccomandazioni'], 1):
-                    testo_completo += f"{i}. {racc}\n"
-            
-            testo_completo += f"\n{'='*70}\nGenerato da Planet AI - Powered by Claude (Anthropic)\n"
+            from report_generator import genera_docx_analisi_ai
+            docx_ai = genera_docx_analisi_ai(data['comune'], data['via'], risultato)
             
             st.download_button(
-                label="📥 Scarica Analisi AI (TXT)",
-                data=testo_completo,
-                file_name=f"analisi_ai_{data['comune']}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt",
-                mime="text/plain",
+                label="\U0001F4E5 Scarica Analisi AI (Word)",
+                data=docx_ai,
+                file_name=f"analisi_ai_{data['comune']}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.docx",
+                mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
                 key="download_ai",
                 use_container_width=True
             )

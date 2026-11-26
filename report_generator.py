@@ -614,3 +614,71 @@ def genera_report_combinato(
     print(f"   ✅ Report salvato: {filename}\n")
     
     return filepath
+
+
+def genera_docx_analisi_ai(comune: str, via: str, risultato: Dict) -> bytes:
+    """
+    Genera in memoria un .docx con la sola analisi AI formattata
+    (per il download dal tab Analisi AI di Streamlit).
+    """
+    import io
+    from datetime import datetime as _dt
+
+    doc = Document()
+    style = doc.styles['Normal']
+    style.font.name = 'Calibri'
+    style.font.size = Pt(11)
+
+    title = doc.add_heading('Analisi AI - Planet AI', 0)
+    title.alignment = WD_ALIGN_PARAGRAPH.CENTER
+
+    p = doc.add_paragraph()
+    run = p.add_run(f"{via}, {comune} - {_dt.now().strftime('%d/%m/%Y %H:%M')}")
+    run.font.italic = True
+    p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    doc.add_paragraph()
+
+    gap = risultato.get('gap_analysis')
+    if gap:
+        doc.add_heading('Gap OMI vs Mercato', 2)
+        gap_table = doc.add_table(rows=4, cols=2)
+        gap_table.style = 'Light Grid Accent 1'
+        gap_data = [
+            ['OMI Mediano', f"\u20ac{gap['omi_mediano']:,.0f}/m\u00b2".replace(',', '.')],
+            ['Mercato Mediano', f"\u20ac{gap['mercato_mediano']:,.0f}/m\u00b2".replace(',', '.')],
+            ['Differenza', f"\u20ac{gap['gap_assoluto']:,.0f}/m\u00b2".replace(',', '.')],
+            ['Percentuale', f"{gap['gap_percentuale']:+.1f}%"],
+        ]
+        for i, (label, value) in enumerate(gap_data):
+            gap_table.rows[i].cells[0].text = label
+            gap_table.rows[i].cells[0].paragraphs[0].runs[0].font.bold = True
+            gap_table.rows[i].cells[1].text = value
+        doc.add_paragraph()
+
+    testo = risultato.get('analisi_completa') or ''
+    for para in testo.split('\n\n'):
+        para = para.strip()
+        if not para:
+            continue
+        if para.startswith('## '):
+            doc.add_heading(para[3:].strip(), 2)
+        elif para.startswith('### '):
+            doc.add_heading(para[4:].strip(), 3)
+        else:
+            doc.add_paragraph(para)
+
+    racc = risultato.get('raccomandazioni')
+    if racc:
+        doc.add_heading('Raccomandazioni', 2)
+        for r in racc:
+            doc.add_paragraph(str(r), style='List Bullet')
+
+    doc.add_paragraph()
+    p = doc.add_paragraph()
+    run = p.add_run('Generato da Planet AI - Powered by Claude (Anthropic)')
+    run.font.size = Pt(9)
+    run.font.italic = True
+
+    buf = io.BytesIO()
+    doc.save(buf)
+    return buf.getvalue()
