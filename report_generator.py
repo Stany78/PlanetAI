@@ -365,7 +365,13 @@ def genera_report_combinato(
         
         doc.add_paragraph('Interpretazione:', style='Heading 3')
         
-        if gap_percentuale > 50:
+        gap_percentuale = (
+            ((mercato_med - omi_med) / omi_med) * 100 if omi_med else None
+        )
+        
+        if gap_percentuale is None:
+            doc.add_paragraph('Gap non calcolabile - quotazione OMI non disponibile per questa zona.')
+        elif gap_percentuale > 50:
             doc.add_paragraph('⚠ GAP MOLTO ALTO (+50% vs OMI)')
             doc.add_paragraph('• Mercato con forte premium su nuove costruzioni')
             doc.add_paragraph('• Possibile sopravvalutazione - Alto rischio pricing')
@@ -555,7 +561,6 @@ def genera_report_combinato(
             )
             
             # Salva mappa come HTML
-            import os
             mappa_filename = f"mappa_{comune}_{now.strftime('%Y%m%d_%H%M%S')}.html"
             mappa_path = os.path.join(output_dir, mappa_filename)
             mappa.save(mappa_path)
