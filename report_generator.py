@@ -237,7 +237,7 @@ def genera_report_combinato(
             cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
         
         # Dati
-        for idx, row in agenzie.iterrows():
+        for idx, (_, row) in enumerate(agenzie.iterrows()):
             table.rows[idx+1].cells[0].text = str(row['Agenzia'])
             table.rows[idx+1].cells[1].text = str(int(row['N° Appartamenti']))
             table.rows[idx+1].cells[2].text = f"€{row['Prezzo Medio']:,.0f}".replace(',', '.')
