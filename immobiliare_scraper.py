@@ -3,9 +3,56 @@ Modulo per scraping dati da Immobiliare.it
 Estrae: Prezzo, MQ, Agenzia, Coordinate GPS per nuove costruzioni
 """
 
+import os
 import requests
 import time
 from typing import List, Dict, Optional
+
+
+def _get_scraperapi_key() -> Optional[str]:
+    """
+    Recupera la API key di ScraperAPI (per bypassare il blocco IP
+    che Immobiliare.it applica agli IP datacenter di Streamlit Cloud).
+    Cerca in: variabile d'ambiente, Streamlit secrets.
+    Se assente, lo scraper fa richieste dirette (ok in locale).
+    """
+    key = os.getenv('SCRAPERAPI_KEY')
+    if key:
+        return key
+    try:
+        import streamlit as st
+        if 'SCRAPERAPI_KEY' in st.secrets:
+            return st.secrets['SCRAPERAPI_KEY']
+    except Exception:
+        pass
+    return None
+
+
+def _fetch(url: str, headers: dict, timeout: int = 15) -> requests.Response:
+    """
+    Esegue la GET. Se SCRAPERAPI_KEY e' configurata, instrada la richiesta
+    via ScraperAPI (IP residenziali). Se la risposta via proxy standard
+    fallisce (403/429/500), ritenta una volta con premium=true.
+    Senza chiave: richiesta diretta (funziona in locale).
+    """
+    key = _get_scraperapi_key()
+    if not key:
+        return requests.get(url, headers=headers, timeout=timeout)
+
+    proxy_endpoint = 'https://api.scraperapi.com/'
+    resp = requests.get(
+        proxy_endpoint,
+        params={'api_key': key, 'url': url},
+        timeout=70,
+    )
+    if resp.status_code in (403, 429, 500):
+        print(f"   [proxy] status {resp.status_code}, ritento con premium=true...", end=" ")
+        resp = requests.get(
+            proxy_endpoint,
+            params={'api_key': key, 'url': url, 'premium': 'true'},
+            timeout=70,
+        )
+    return resp
 
 
 def cerca_appartamenti(lat: float, lon: float, raggio_km: float, max_pagine: int = 5) -> List[Dict]:
@@ -71,7 +118,7 @@ def cerca_appartamenti(lat: float, lon: float, raggio_km: float, max_pagine: int
         print(f"📄 Pagina {pagina}...", end=" ")
         
         try:
-            response = requests.get(url, headers=headers, timeout=15)
+            response = _fetch(url, headers=headers, timeout=15)
             
             if response.status_code != 200:
                 print(f"❌ Errore HTTP {response.status_code}")
