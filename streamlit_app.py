@@ -24,7 +24,7 @@ try:
 except ImportError:
     CLAUDE_AVAILABLE = False
     print("⚠️ Modulo claude_analyzer non disponibile - analisi AI disabilitata")
-from config import REPORTS_DIR
+from config import REPORTS_DIR, OMI_DATA_INFO
 # Import opzionali per mappe e geocoding
 try:
     from map_generator import crea_mappa_interattiva, get_mappa_statistiche
@@ -75,7 +75,7 @@ with st.form("analisi_form"):
         via = st.text_input("Via/Indirizzo", value="Via Anzani", placeholder="Es: Via Anzani")
     
     with col3:
-        raggio_km = st.number_input("Raggio (km)", min_value=0.5, max_value=5.0, value=1.0, step=0.5)
+        raggio_km = st.number_input("Raggio (km)", min_value=0.5, max_value=50.0, value=1.0, step=0.5)
     
     st.markdown("---")
     
@@ -280,7 +280,7 @@ with tab1:
             col_med.metric("Mediano", f"€{zona_omi['val_med_mq']:,.0f}".replace(',', '.'))
             col_max.metric("Massimo", f"€{zona_omi['val_max_mq']:,.0f}".replace(',', '.'))
         
-        st.caption("Fonte: dati ufficiali rogiti - Agenzia delle Entrate (Q2 2025/2)")
+        st.caption(f"Fonte: dati ufficiali rogiti - Agenzia delle Entrate ({OMI_DATA_INFO})")
     else:
         st.warning("⚠️ Dati OMI non disponibili per questa zona.")
 
@@ -994,4 +994,4 @@ with tab6:
 # FOOTER
 # ========================================
 st.markdown("---")
-st.caption("Planet AI - Analisi Immobiliare | Dati OMI: Agenzia delle Entrate QI 2025/1 | Mercato: Immobiliare.it")
+st.caption(f"Planet AI - Analisi Immobiliare | {OMI_DATA_INFO} - Fonte: Agenzia Entrate - OMI | Mercato: Immobiliare.it")
